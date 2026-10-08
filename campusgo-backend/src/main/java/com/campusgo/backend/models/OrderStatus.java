@@ -1,0 +1,23 @@
+package com.campusgo.backend.models;
+
+public enum OrderStatus {
+    PLACED,
+    ACCEPTED,
+    REJECTED,
+    PREPARING,
+    PACKED,
+    READY_FOR_PICKUP,
+    DELIVERY_BIDDING,
+    DELIVERY_PARTNER_ASSIGNED,
+    DELIVERY_ASSIGNED,
+    ASSIGNED, // backward compatibility
+    DELIVERY_PARTNER_ACCEPTED,
+    PICKUP_STARTED,
+    PICKED_UP,
+    OUT_FOR_DELIVERY,
+    ARRIVING,
+    DELIVERED,
+    COMPLETED,
+    CANCELLED,
+    DEADLINE_MISSED
+}

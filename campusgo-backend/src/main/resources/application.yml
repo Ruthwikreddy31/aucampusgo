@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: campusgo-backend
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campusgo}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:vrr12345}
+    
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
+          connectiontimeout: 15000
+          timeout: 15000
+          writetimeout: 15000
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: ${JWT_EXPIRATION:86400000} # 24 hours
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+  otp:
+    expose-in-response: ${OTP_EXPOSE_IN_RESPONSE:true}
+  delivery:
+    earning-per-delivery: ${DELIVERY_EARNING_PER_DELIVERY:15.00}
+  campus:
+    name: ${CAMPUS_NAME:Anurag University - Uppal Delivery Zone}
+    latitude: ${CAMPUS_LATITUDE:17.4018}
+    longitude: ${CAMPUS_LONGITUDE:78.5602}
+    radius-meters: ${CAMPUS_RADIUS_METERS:15000.0}
