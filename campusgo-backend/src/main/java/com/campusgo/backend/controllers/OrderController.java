@@ -8,6 +8,7 @@ import com.campusgo.backend.security.UserDetailsImpl;
 import com.campusgo.backend.services.NotificationService;
 import com.campusgo.backend.services.ZestBiddingService;
 import com.campusgo.backend.services.ZestEventPublisher;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -157,7 +158,7 @@ public class OrderController {
     @PostMapping
     @Transactional
     public ResponseEntity<?> createOrder(
-            @RequestBody CreateOrderRequest request,
+            @Valid @RequestBody CreateOrderRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         if (userDetails == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
@@ -220,12 +221,12 @@ public class OrderController {
         Order order = Order.builder()
                 .orderNumber(orderNumber)
                 .user(user)
-                .customerName(request.getCustomerName().trim())
-                .customerPhone(request.getCustomerPhone().trim())
-                .deliveryLocation(request.getDeliveryLocation().trim())
-                .deliveryInstructions(request.getDeliveryInstructions())
+                .customerName(cleanText(request.getCustomerName()))
+                .customerPhone(cleanText(request.getCustomerPhone()))
+                .deliveryLocation(cleanText(request.getDeliveryLocation()))
+                .deliveryInstructions(cleanText(request.getDeliveryInstructions()))
                 .deliveryDeadline(deliveryDeadline)
-                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH_ON_DELIVERY")
+                .paymentMethod(cleanText(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH_ON_DELIVERY"))
                 .paymentStatus("PENDING")
                 .orderStatus(OrderStatus.PLACED)
                 .managerStatus("PENDING")
@@ -258,6 +259,8 @@ public class OrderController {
 
             if (orderShop == null && p.getShop() != null) {
                 orderShop = p.getShop();
+            } else if (orderShop != null && p.getShop() != null && !orderShop.getId().equals(p.getShop().getId())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "All items in an order must be from the same shop"));
             }
 
             BigDecimal linePrice = p.getPrice();
@@ -297,6 +300,16 @@ public class OrderController {
 
         log.info("Created new campus order: {} for user: {} with delivery OTP: {}. Parallel bidding started.", saved.getOrderNumber(), user.getEmail(), deliveryOtp);
         return ResponseEntity.ok(saved);
+    }
+
+    private String cleanText(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.trim()
+                .replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "")
+                .replace("<", "")
+                .replace(">", "");
     }
 
     @GetMapping

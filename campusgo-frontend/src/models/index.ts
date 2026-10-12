@@ -110,6 +110,7 @@ export interface Product {
   imageUrl: string
   available: boolean
   active: boolean
+  stock?: number
   shop?: Shop
   category?: Category
   createdAt: string

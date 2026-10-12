@@ -2,6 +2,7 @@ package com.campusgo.backend.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,16 @@ public class JwtUtils {
 
     @Value("${app.jwt.expiration-ms}")
     private int jwtExpirationMs;
+
+    @PostConstruct
+    void validateConfiguration() {
+        if (jwtSecret == null || jwtSecret.getBytes().length < 32) {
+            throw new IllegalStateException("JWT_SECRET must be set to at least 32 bytes.");
+        }
+        if (jwtExpirationMs <= 0) {
+            throw new IllegalStateException("JWT expiration must be positive.");
+        }
+    }
 
     private Key getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes();

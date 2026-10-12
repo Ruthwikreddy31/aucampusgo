@@ -11,6 +11,7 @@ interface AuthState {
   isLoginModalOpen: boolean
   pendingAction: (() => void) | null
   login: (email: string, password: string) => Promise<void>
+  googleLogin: (idToken: string) => Promise<void>
   sendOtp: (email: string) => Promise<{ success: boolean; message: string; otp?: string }>
   verifyOtp: (email: string, otp: string) => Promise<void>
   logout: () => Promise<void>
@@ -35,6 +36,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true })
     try {
       const res = await authService.login({ email, password })
+      set({ user: res.user, token: res.token, loading: false })
+      await useCartStore.getState().syncLocalToServer()
+    } catch (err) {
+      set({ loading: false })
+      throw err
+    }
+  },
+
+  googleLogin: async (idToken) => {
+    set({ loading: true })
+    try {
+      const res = await authService.googleLogin(idToken)
       set({ user: res.user, token: res.token, loading: false })
       await useCartStore.getState().syncLocalToServer()
     } catch (err) {

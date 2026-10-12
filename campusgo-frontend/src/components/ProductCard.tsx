@@ -23,6 +23,8 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
   const originalPrice = hasDiscount ? Math.round(product.price * 1.25) : null
   const discountPercent = originalPrice ? Math.round(((originalPrice - product.price) / originalPrice) * 100) : null
   const image = product.imageUrl || fallbackImages[product.id % fallbackImages.length]
+  const inStock = product.stock == null || product.stock > 0
+  const canOrder = product.available && inStock
 
   const categoryName = typeof product.category === 'string'
     ? product.category
@@ -38,14 +40,17 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     try {
       await addItem(product)
       toast.success(`${product.name} added to cart`)
-    } catch {
-      toast.error('Failed to add item')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add item')
     }
   }
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!product.available) return
+    if (!canOrder) {
+      toast.error('This item is currently out of stock')
+      return
+    }
     await executeAdd()
   }
 
@@ -94,9 +99,9 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
         </span>
       )}
 
-      {!product.available && (
+      {!canOrder && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[26px] bg-white/75 backdrop-blur-sm">
-          <span className="badge badge-danger">Unavailable</span>
+          <span className="badge badge-danger">{!inStock ? 'Out of Stock' : 'Unavailable'}</span>
         </div>
       )}
 
@@ -130,7 +135,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
               )}
             </div>
             <p className="text-[10px] font-semibold text-[var(--color-text-subtle)]">
-              {product.shop?.name || 'Campus Mart'}
+              {product.stock == null ? product.shop?.name || 'Campus Mart' : `${product.stock} in stock`}
             </p>
           </div>
 
@@ -162,7 +167,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
           ) : (
             <button
               onClick={handleAdd}
-              disabled={!product.available || loading}
+              disabled={!canOrder || loading}
               className="flex h-9 min-w-18 items-center justify-center gap-1 rounded-full bg-[var(--color-primary)] px-3.5 text-xs font-black tracking-wide text-white shadow-[var(--shadow-coral)] transition hover:bg-[var(--color-primary-hover)] active:scale-95 disabled:opacity-40"
               aria-label={`Add ${product.name} to cart`}
             >

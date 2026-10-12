@@ -31,10 +31,9 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
 
   const userRoles = getUserRoles(user)
 
-  // Allow ADMIN or CANTEEN_MEMBER for admin / manager routes
   if (roles) {
     const isAuthorized = roles.some((role) => {
-      if (role === 'ADMIN') return userRoles.includes('ADMIN') || userRoles.includes('CANTEEN_MEMBER')
+      if (role === 'ADMIN') return userRoles.includes('ADMIN')
       if (role === 'CANTEEN_MEMBER') return userRoles.includes('CANTEEN_MEMBER') || userRoles.includes('ADMIN')
       return userRoles.includes(role)
     })

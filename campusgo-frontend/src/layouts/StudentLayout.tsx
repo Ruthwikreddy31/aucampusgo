@@ -11,6 +11,7 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
+  Store,
   User,
 } from 'lucide-react'
 import { useCartStore } from '../store/cartStore'
@@ -79,6 +80,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     return location.pathname === `/category/${categoryToSlug(category)}`
   }
 
+  const customerNav = [
+    { label: 'Home', to: '/home' },
+    { label: 'Shops', to: '/shops' },
+    { label: 'Cart', to: '/cart' },
+    { label: 'Orders', to: '/orders' },
+    { label: 'Track Order', to: '/orders' },
+    { label: 'Profile', to: '/profile' },
+  ]
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-white/90 backdrop-blur-xl">
@@ -97,6 +107,24 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <MapPin size={17} className="text-[var(--color-primary)]" />
             Anurag University Campus
           </button>
+
+          <nav className="hidden items-center gap-1 xl:flex">
+            {customerNav.map((item) => (
+              <NavLink
+                key={item.label}
+                to={item.to}
+                className={({ isActive }) =>
+                  `rounded-full px-3.5 py-2 text-xs font-extrabold transition ${
+                    isActive
+                      ? 'bg-[var(--color-primary)] text-white shadow-[var(--shadow-coral)]'
+                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-primary)]'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
 
           <form onSubmit={handleSearchSubmit} className="relative hidden flex-1 lg:block">
             <Search size={19} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -228,9 +256,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             <Home size={21} />
             Home
           </NavLink>
-          <NavLink to="/search" className="flex flex-col items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
-            <Search size={21} />
-            Search
+          <NavLink to="/shops" className="flex flex-col items-center gap-1 text-xs font-bold text-[var(--color-text-muted)]">
+            <Store size={21} />
+            Shops
           </NavLink>
           <button
             type="button"

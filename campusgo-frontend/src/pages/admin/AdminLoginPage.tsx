@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ShieldCheck, Mail, Lock, ArrowRight, Sparkles, KeyRound } from 'lucide-react'
+import { ShieldCheck, Mail, Lock, ArrowRight, KeyRound } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { toast } from 'sonner'
 import { hasRole } from '../../utils/roles'
@@ -14,14 +14,14 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
-  const [devOtp, setDevOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // If already logged in as Admin/Manager, redirect directly
   useEffect(() => {
-    if (hasRole(user, 'ADMIN') || hasRole(user, 'MANAGER') || hasRole(user, 'CANTEEN_MEMBER')) {
+    if (hasRole(user, 'ADMIN')) {
       navigate('/admin', { replace: true })
+    } else if (hasRole(user, 'MANAGER') || hasRole(user, 'CANTEEN_MEMBER')) {
+      navigate('/manager', { replace: true })
     }
   }, [user, navigate])
 
@@ -52,10 +52,9 @@ export default function AdminLoginPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await sendOtp(email.trim())
+      await sendOtp(email.trim())
       setOtpSent(true)
-      if (res.otp) setDevOtp(res.otp)
-      toast.success('OTP sent! Check your email or use the code shown below.')
+      toast.success('OTP sent. Please check your email.')
     } catch (err: any) {
       setError(err?.message || 'Failed to send OTP')
     } finally {
@@ -81,17 +80,6 @@ export default function AdminLoginPage() {
       setError(err?.response?.data?.message || 'Invalid or expired OTP')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fillDemoAdmin = (acc: 'manager' | 'admin') => {
-    if (loginMode === 'password') {
-      setEmail(acc === 'admin' ? 'admin@anurag.edu.in' : 'manager@anurag.edu.in')
-      setPassword('admin123')
-    } else {
-      setEmail(acc === 'admin' ? 'admin@anurag.edu.in' : 'manager@anurag.edu.in')
-      setOtpSent(false)
-      setDevOtp('')
     }
   }
 
@@ -189,7 +177,7 @@ export default function AdminLoginPage() {
                 <div className="relative">
                   <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type="email" value={email} onChange={(e) => { setEmail(e.target.value); setOtpSent(false); setDevOtp('') }}
+                    type="email" value={email} onChange={(e) => { setEmail(e.target.value); setOtpSent(false) }}
                     placeholder="admin@anurag.edu.in" required disabled={otpSent}
                     className="w-full rounded-2xl border border-white/15 bg-white/5 pl-12 pr-4 py-3 text-sm text-white placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:bg-white/10 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                   />
@@ -198,11 +186,6 @@ export default function AdminLoginPage() {
               {otpSent && (
                 <div>
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-300 mb-1.5">Enter OTP</label>
-                  {devOtp && (
-                    <div className="mb-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 font-mono">
-                      Dev OTP: <span className="font-black text-amber-300 text-sm">{devOtp}</span>
-                    </div>
-                  )}
                   <div className="relative">
                     <KeyRound size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -219,7 +202,7 @@ export default function AdminLoginPage() {
                 {loading ? <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : otpSent ? <><KeyRound size={15} /> Verify OTP <ArrowRight size={16} /></> : <><Mail size={15} /> Send OTP <ArrowRight size={16} /></>}
               </button>
               {otpSent && (
-                <button type="button" onClick={() => { setOtpSent(false); setDevOtp(''); setOtp('') }}
+                <button type="button" onClick={() => { setOtpSent(false); setOtp('') }}
                   className="w-full text-xs text-slate-400 hover:text-white transition">
                   ← Change Email / Resend OTP
                 </button>
@@ -227,22 +210,6 @@ export default function AdminLoginPage() {
             </form>
           )}
 
-          {/* Quick Demo Credentials */}
-          <div className="mt-6 pt-5 border-t border-white/10">
-            <p className="text-center text-xs font-bold text-slate-400 mb-3">Quick Demo Accounts</p>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => fillDemoAdmin('manager')}
-                className="flex-1 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-bold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition cursor-pointer">
-                <Sparkles size={11} className="inline mr-1 text-amber-400" />
-                Manager
-              </button>
-              <button type="button" onClick={() => fillDemoAdmin('admin')}
-                className="flex-1 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs font-bold text-violet-300 hover:bg-violet-500/20 hover:text-white transition cursor-pointer">
-                <ShieldCheck size={11} className="inline mr-1 text-amber-400" />
-                Admin
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Back to student site link */}

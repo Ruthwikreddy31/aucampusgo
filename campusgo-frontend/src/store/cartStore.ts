@@ -59,6 +59,11 @@ function toCartItems(localItems: LocalCartItem[]): CartItem[] {
 
 function addLocalItem(product: Product, quantity: number) {
   const items = loadLocalCart()
+  const currentShopId = items[0]?.product?.shopId ?? items[0]?.product?.shop?.id
+  const nextShopId = product.shopId ?? product.shop?.id
+  if (currentShopId && nextShopId && currentShopId !== nextShopId) {
+    throw new Error(`Your cart contains items from ${items[0]?.product?.shop?.name || 'another shop'}. Please checkout first or clear your cart before adding items from ${product.shop?.name || 'this shop'}.`)
+  }
   const existing = items.find((item) => item.productId === product.id)
   if (existing) {
     existing.quantity += quantity
@@ -106,6 +111,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   addItem: async (product, quantity = 1) => {
     set({ loading: true })
     try {
+      const currentItems = get().items
+      const currentShopId = currentItems[0]?.product?.shopId ?? currentItems[0]?.product?.shop?.id
+      const nextShopId = product.shopId ?? product.shop?.id
+      if (currentShopId && nextShopId && currentShopId !== nextShopId) {
+        throw new Error(`Your cart contains items from ${currentItems[0]?.product?.shop?.name || 'another shop'}. Please checkout first or clear your cart before adding items from ${product.shop?.name || 'this shop'}.`)
+      }
+
       if (!isAuthenticated()) {
         const items = addLocalItem(product, quantity)
         set({ items, loading: false })

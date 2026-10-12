@@ -1,11 +1,17 @@
 package com.campusgo.backend.controllers;
 
 import com.campusgo.backend.models.DeliveryPartnerDailyFee;
+import com.campusgo.backend.models.Role;
+import com.campusgo.backend.models.User;
 import com.campusgo.backend.models.WalletTransaction;
+import com.campusgo.backend.repositories.DeliveryAgentRepository;
 import com.campusgo.backend.repositories.DeliveryPartnerDailyFeeRepository;
+import com.campusgo.backend.repositories.UserRepository;
 import com.campusgo.backend.repositories.WalletTransactionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.campusgo.backend.security.UserDetailsImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -17,17 +23,19 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/wallet")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@RequiredArgsConstructor
 public class WalletController {
 
-    @Autowired
-    private DeliveryPartnerDailyFeeRepository dailyFeeRepository;
-
-    @Autowired
-    private WalletTransactionRepository walletTransactionRepository;
+    private final DeliveryPartnerDailyFeeRepository dailyFeeRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final DeliveryAgentRepository deliveryAgentRepository;
+    private final UserRepository userRepository;
 
     @GetMapping("/partner/{partnerId}/daily-fee-status")
-    public ResponseEntity<?> getDailyFeeStatus(@PathVariable Long partnerId) {
+    public ResponseEntity<?> getDailyFeeStatus(@PathVariable Long partnerId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (!canAccessPartner(partnerId, userDetails)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
+        }
         LocalDate today = LocalDate.now();
         Optional<DeliveryPartnerDailyFee> feeOpt = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(partnerId, today);
 
@@ -42,7 +50,10 @@ public class WalletController {
     }
 
     @PostMapping("/partner/{partnerId}/pay-daily-fee")
-    public ResponseEntity<?> payDailyFee(@PathVariable Long partnerId) {
+    public ResponseEntity<?> payDailyFee(@PathVariable Long partnerId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (!canAccessPartner(partnerId, userDetails)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
+        }
         LocalDate today = LocalDate.now();
         Optional<DeliveryPartnerDailyFee> existingFee = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(partnerId, today);
         if (existingFee.isPresent() && "PAID".equalsIgnoreCase(existingFee.get().getStatus())) {
@@ -76,7 +87,10 @@ public class WalletController {
     }
 
     @GetMapping("/partner/{partnerId}/transactions")
-    public ResponseEntity<List<WalletTransaction>> getTransactions(@PathVariable Long partnerId) {
+    public ResponseEntity<?> getTransactions(@PathVariable Long partnerId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (!canAccessPartner(partnerId, userDetails)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
+        }
         List<WalletTransaction> txns = walletTransactionRepository.findByDeliveryPartnerIdOrderByCreatedAtDesc(partnerId);
         return ResponseEntity.ok(txns);
     }
@@ -86,7 +100,11 @@ public class WalletController {
             @PathVariable Long partnerId,
             @RequestParam Long orderId,
             @RequestParam Double amount,
-            @RequestParam(required = false) String description) {
+            @RequestParam(required = false) String description,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (!hasRole(userDetails, Role.ADMIN) && !hasRole(userDetails, Role.MANAGER) && !hasRole(userDetails, Role.CANTEEN_MEMBER)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
+        }
 
         List<WalletTransaction> txns = walletTransactionRepository.findByDeliveryPartnerIdOrderByCreatedAtDesc(partnerId);
         double currentBalance = txns.isEmpty() ? 0.0 : txns.get(0).getBalanceAfter();
@@ -104,5 +122,27 @@ public class WalletController {
 
         WalletTransaction saved = walletTransactionRepository.save(creditTxn);
         return ResponseEntity.ok(saved);
+    }
+
+    private boolean canAccessPartner(Long partnerId, UserDetailsImpl userDetails) {
+        if (userDetails == null) {
+            return false;
+        }
+        if (hasRole(userDetails, Role.ADMIN) || hasRole(userDetails, Role.MANAGER) || hasRole(userDetails, Role.CANTEEN_MEMBER)) {
+            return true;
+        }
+        return deliveryAgentRepository.findById(partnerId)
+                .map(agent -> agent.getUser() != null && agent.getUser().getId().equals(userDetails.getId()))
+                .orElse(false);
+    }
+
+    private boolean hasRole(UserDetailsImpl userDetails, Role role) {
+        if (userDetails == null) {
+            return false;
+        }
+        return userRepository.findById(userDetails.getId())
+                .map(User::getRoles)
+                .map(roles -> roles.contains(role))
+                .orElse(false);
     }
 }

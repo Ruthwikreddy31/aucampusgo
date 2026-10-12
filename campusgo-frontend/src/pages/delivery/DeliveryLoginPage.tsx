@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Bike, Mail, Lock, ArrowRight, FileCheck, CheckCircle2, ChevronRight } from 'lucide-react'
+import { Bike, Mail, Lock, ArrowRight, FileCheck, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { toast } from 'sonner'
 import { hasRole } from '../../utils/roles'
@@ -41,11 +41,6 @@ export default function DeliveryLoginPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const fillDemoCourier = () => {
-    setEmail('agent@anurag.edu.in')
-    setPassword('agent123')
   }
 
   return (
@@ -132,17 +127,6 @@ export default function DeliveryLoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Pill */}
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
-            <button
-              type="button"
-              onClick={fillDemoCourier}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer"
-            >
-              <CheckCircle2 size={14} className="text-emerald-400" />
-              Use Demo Courier Account
-            </button>
-          </div>
         </div>
 
         {/* Registration & Status Action Links */}

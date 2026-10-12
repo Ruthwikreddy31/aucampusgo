@@ -1,21 +1,26 @@
 spring:
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:../.env[.properties]
+
   application:
     name: campusgo-backend
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campusgo}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:vrr12345}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campusgo}?useSSL=${DB_USE_SSL:false}&serverTimezone=UTC&allowPublicKeyRetrieval=false
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQLDialect
 
   mail:
@@ -39,17 +44,36 @@ spring:
 server:
   port: ${PORT:8080}
   error:
-    include-message: always
-    include-binding-errors: always
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    whitelabel:
+      enabled: false
 
 app:
+  seed-demo-data: ${SEED_DEMO_DATA:false}
+  demo:
+    admin-password: ${DEMO_ADMIN_PASSWORD:}
+    student-password: ${DEMO_STUDENT_PASSWORD:}
+    agent-password: ${DEMO_AGENT_PASSWORD:}
   jwt:
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION:86400000} # 24 hours
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+    allowed-domains: ${GOOGLE_ALLOWED_DOMAINS:anurag.edu.in}
+    allow-mock-tokens: ${GOOGLE_ALLOW_MOCK_TOKENS:false}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  rate-limit:
+    auth-requests-per-minute: ${AUTH_RATE_LIMIT_PER_MINUTE:10}
+    api-requests-per-minute: ${API_RATE_LIMIT_PER_MINUTE:120}
   mail:
     enabled: ${MAIL_ENABLED:true}
   otp:
-    expose-in-response: ${OTP_EXPOSE_IN_RESPONSE:true}
+    expose-in-response: ${OTP_EXPOSE_IN_RESPONSE:false}
+  documents:
+    encryption-key: ${DOCUMENT_ENCRYPTION_KEY:${JWT_SECRET}}
   delivery:
     earning-per-delivery: ${DELIVERY_EARNING_PER_DELIVERY:15.00}
   campus:

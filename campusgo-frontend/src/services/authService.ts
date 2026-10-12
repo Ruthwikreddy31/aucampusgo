@@ -2,28 +2,20 @@ import api from './api'
 import type { AuthResponse, LoginRequest, User } from '../models'
 import { COLLEGE_EMAIL_REGEX, TOKEN_KEY, USER_KEY } from '../utils/constants'
 
-/** Deterministic ID from email so the same user always gets the same mock ID */
-function stableIdFromEmail(email: string): number {
-  let hash = 0
-  for (let i = 0; i < email.length; i++) {
-    hash = ((hash << 5) - hash + email.charCodeAt(i)) | 0
+function apiErrorMessage(err: any, fallback: string): string {
+  const data = err?.response?.data
+  if (typeof data === 'string' && data.trim()) return data
+  if (typeof data?.message === 'string' && data.message.trim()) return data.message
+  if (Array.isArray(data?.errors) && data.errors.length > 0) {
+    const first = data.errors[0]
+    if (typeof first === 'string') return first
+    if (typeof first?.defaultMessage === 'string') return first.defaultMessage
+    if (typeof first?.message === 'string') return first.message
   }
-  return Math.abs(hash % 90000) + 10000 // always 5-digit positive number
-}
-
-function detectRoles(email: string): { roles: User['roles']; role: User['role'] } {
-  const e = email.toLowerCase()
-  const isAdmin =
-    e.includes('admin') ||
-    e.includes('manager') ||
-    e.startsWith('admin@') ||
-    e === 'admin@anurag.edu.in' ||
-    e === 'campusadmin@anurag.edu.in' ||
-    e === 'principal@anurag.edu.in'
-  const isDelivery = e.includes('delivery') || e.includes('courier')
-  const roles = isAdmin ? ['ADMIN' as const] : isDelivery ? ['DELIVERY_PARTNER' as const] : ['STUDENT' as const]
-  const role = isAdmin ? 'ADMIN' as const : isDelivery ? 'DELIVERY_PARTNER' as const : 'STUDENT' as const
-  return { roles, role }
+  if (typeof err?.message === 'string' && err.message.trim() && !err.message.includes('Request failed')) {
+    return err.message
+  }
+  return fallback
 }
 
 export const authService = {
@@ -36,23 +28,19 @@ export const authService = {
       localStorage.setItem(TOKEN_KEY, data.token)
       localStorage.setItem(USER_KEY, JSON.stringify(data.user))
       return data
-    } catch {
-      const { roles, role } = detectRoles(credentials.email)
-      const mockUser: User = {
-        id: stableIdFromEmail(credentials.email),
-        name: credentials.email.split('@')[0].toUpperCase(),
-        email: credentials.email,
-        phone: '+91 98490 11223',
-        roles,
-        role,
-        active: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      const token = 'mock-jwt-token-' + Date.now()
-      localStorage.setItem(TOKEN_KEY, token)
-      localStorage.setItem(USER_KEY, JSON.stringify(mockUser))
-      return { token, user: mockUser }
+    } catch (err: any) {
+      throw new Error(apiErrorMessage(err, 'Login failed. Please check your credentials.'))
+    }
+  },
+
+  async googleLogin(idToken: string): Promise<AuthResponse> {
+    try {
+      const { data } = await api.post<AuthResponse>('/api/auth/google', { idToken })
+      localStorage.setItem(TOKEN_KEY, data.token)
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user))
+      return data
+    } catch (err: any) {
+      throw new Error(apiErrorMessage(err, 'Google sign-in failed. Only @anurag.edu.in accounts are authorized.'))
     }
   },
 
@@ -65,14 +53,8 @@ export const authService = {
     try {
       const { data } = await api.post('/api/auth/send-otp', { email: cleanEmail })
       return data
-    } catch {
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString()
-      sessionStorage.setItem(`otp_${cleanEmail}`, generatedOtp)
-      return {
-        success: true,
-        message: `OTP sent successfully to ${cleanEmail}`,
-        otp: generatedOtp,
-      }
+    } catch (err: any) {
+      throw new Error(apiErrorMessage(err, 'Failed to send OTP to your college email. Please check the backend mail settings.'))
     }
   },
 
@@ -88,29 +70,8 @@ export const authService = {
       localStorage.setItem(TOKEN_KEY, data.token)
       localStorage.setItem(USER_KEY, JSON.stringify(data.user))
       return data
-    } catch (err) {
-      const storedOtp = sessionStorage.getItem(`otp_${cleanEmail}`)
-      const isValidOtp = (storedOtp && storedOtp === cleanOtp) || cleanOtp === '123456'
-      if (isValidOtp) {
-        sessionStorage.removeItem(`otp_${cleanEmail}`)
-        const { roles, role } = detectRoles(cleanEmail)
-        const mockUser: User = {
-          id: stableIdFromEmail(cleanEmail),
-          name: cleanEmail.split('@')[0].toUpperCase(),
-          email: cleanEmail,
-          phone: '+91 98490 11223',
-          roles,
-          role,
-          active: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-        const token = 'mock-jwt-token-' + Date.now()
-        localStorage.setItem(TOKEN_KEY, token)
-        localStorage.setItem(USER_KEY, JSON.stringify(mockUser))
-        return { token, user: mockUser }
-      }
-      throw err
+    } catch (err: any) {
+      throw new Error(apiErrorMessage(err, 'Invalid or expired OTP. Please check your email and try again.'))
     }
   },
 

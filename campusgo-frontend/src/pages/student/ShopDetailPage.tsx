@@ -6,7 +6,7 @@ import type { Shop, Product } from '../../models'
 import ProductCard from '../../components/ProductCard'
 import PageHeader from '../../components/PageHeader'
 import LoadingSpinner from '../../components/LoadingSpinner'
-import { Clock, Star, ShoppingCart } from 'lucide-react'
+import { Clock, Search, Star, ShoppingCart } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore'
 import { productMatchesCategory } from '../../utils/categories'
 
@@ -16,6 +16,7 @@ export default function ShopDetailPage() {
   const [shop, setShop] = useState<Shop | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const itemCount = useCartStore((s) => s.itemCount())
   useEffect(() => {
@@ -33,14 +34,22 @@ export default function ShopDetailPage() {
   const shopCategories = useMemo(() => {
     const presentCategories: string[] = ['All']
     const testList = [
+      'Fast Food',
+      'Ice Creams',
+      'Biscuits & Snacks',
+      'Chocolates',
+      'Bakery',
       'Meals',
+      'Tiffins',
+      'Beverages',
+      'Stationery',
+      'Biscuits',
+      'Chips',
       'Drinks',
       'Snacks',
-      'Fast Food',
       'Maggi & Noodles',
       'Tea & Coffee',
       'Fresh Juices',
-      'Stationery',
       'Essentials',
     ]
     testList.forEach((cat) => {
@@ -62,9 +71,17 @@ export default function ShopDetailPage() {
   }, [products])
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'All') return products
-    return products.filter((p) => productMatchesCategory(p, selectedCategory))
-  }, [products, selectedCategory])
+    const q = query.trim().toLowerCase()
+    return products.filter((p) => {
+      const matchesCategory = selectedCategory === 'All' || productMatchesCategory(p, selectedCategory)
+      const matchesQuery =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        (typeof p.category === 'string' ? p.category : p.category?.name || '').toLowerCase().includes(q)
+      return matchesCategory && matchesQuery
+    })
+  }, [products, selectedCategory, query])
 
   const available = filteredProducts.filter((p) => p.available)
   const unavailable = filteredProducts.filter((p) => !p.available)
@@ -110,6 +127,11 @@ export default function ShopDetailPage() {
           {shop.description && (
             <p className="text-sm text-[var(--color-text-muted)] mt-2">{shop.description}</p>
           )}
+          {!shop.open && (
+            <div className="mt-3 rounded-[18px] border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
+              Currently closed. Orders are temporarily unavailable.
+            </div>
+          )}
           <div className="flex items-center gap-4 mt-3">
             <span className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)]">
               <Clock size={14} className="text-[var(--color-primary-light)]" />
@@ -132,6 +154,16 @@ export default function ShopDetailPage() {
           </div>
         ) : (
           <>
+            <div className="relative">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search products..."
+                className="input-field pl-11"
+              />
+            </div>
+
             {/* Category Filter Pills */}
             {shopCategories.length > 2 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -182,7 +214,7 @@ export default function ShopDetailPage() {
               </div>
             ) : (
               <>
-                {available.length > 0 && (
+                {available.length > 0 && shop.open && (
                   <section>
                     <h3 className="section-title mb-3">
                       Available Items {selectedCategory !== 'All' ? `(${selectedCategory})` : ''}
@@ -200,12 +232,14 @@ export default function ShopDetailPage() {
                     </div>
                   </section>
                 )}
-                {unavailable.length > 0 && (
+                {(unavailable.length > 0 || !shop.open) && (
                   <section>
-                    <h3 className="section-title mb-3 text-[var(--color-text-subtle)]">Currently Unavailable</h3>
+                    <h3 className="section-title mb-3 text-[var(--color-text-subtle)]">
+                      {shop.open ? 'Currently Unavailable' : 'Ordering Disabled'}
+                    </h3>
                     <div className="grid grid-cols-2 gap-3 opacity-60">
-                      {unavailable.map((p) => (
-                        <ProductCard key={p.id} product={p} />
+                      {(shop.open ? unavailable : filteredProducts).map((p) => (
+                        <ProductCard key={p.id} product={shop.open ? p : { ...p, available: false }} />
                       ))}
                     </div>
                   </section>

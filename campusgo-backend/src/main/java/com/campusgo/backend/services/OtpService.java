@@ -23,6 +23,11 @@ public class OtpService {
     public static class OtpData {
         private String code;
         private LocalDateTime expiryTime;
+        private int attempts;
+
+        public void incrementAttempts() {
+            this.attempts++;
+        }
     }
 
     /**
@@ -35,9 +40,9 @@ public class OtpService {
         String otp = String.valueOf(number);
 
         LocalDateTime expiry = LocalDateTime.now().plusMinutes(OTP_EXPIRE_MINUTES);
-        otpMap.put(cleanEmail, new OtpData(otp, expiry));
+        otpMap.put(cleanEmail, new OtpData(otp, expiry, 0));
 
-        log.info("Generated OTP [{}] for email [{}] expiring at [{}]", otp, cleanEmail, expiry);
+        log.info("Generated OTP for email [{}] expiring at [{}]", cleanEmail, expiry);
         return otp;
     }
 
@@ -63,6 +68,12 @@ public class OtpService {
             return false;
         }
 
+        if (otpData.getAttempts() >= 5) {
+            log.warn("OTP attempt limit exceeded for email [{}]", cleanEmail);
+            otpMap.remove(cleanEmail);
+            return false;
+        }
+
         boolean matches = otpData.getCode().equals(inputOtp.trim());
         if (matches) {
             otpMap.remove(cleanEmail); // Single use
@@ -70,7 +81,8 @@ public class OtpService {
             return true;
         }
 
-        log.warn("Invalid OTP input [{}] for email [{}]", inputOtp, cleanEmail);
+        otpData.incrementAttempts();
+        log.warn("Invalid OTP input for email [{}]", cleanEmail);
         return false;
     }
 }

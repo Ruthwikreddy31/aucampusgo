@@ -18,6 +18,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -27,6 +28,7 @@ public class DocumentStorageService {
 
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(".jpg", ".jpeg", ".png", ".pdf", ".webp");
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final Pattern STORED_FILENAME_PATTERN = Pattern.compile("^[a-f0-9\\-]{36}\\.(jpg|jpeg|png|pdf|webp)$", Pattern.CASE_INSENSITIVE);
     private static final byte[] ENCRYPTION_MARKER = "CGENC1".getBytes();
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH_BITS = 128;
@@ -68,11 +70,21 @@ public class DocumentStorageService {
             throw new IllegalArgumentException("File type " + extension + " is not allowed. Only JPG, PNG, WEBP, and PDF are supported.");
         }
 
+        byte[] plainBytes;
+        try {
+            plainBytes = file.getBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read uploaded file", e);
+        }
+        if (!hasAllowedSignature(extension, plainBytes)) {
+            throw new IllegalArgumentException("Uploaded file content does not match the declared file type.");
+        }
+
         String storedFilename = UUID.randomUUID().toString() + extension;
 
         try {
             Path targetLocation = this.storageLocation.resolve(storedFilename);
-            Files.write(targetLocation, encrypt(file.getBytes()), StandardOpenOption.CREATE_NEW);
+            Files.write(targetLocation, encrypt(plainBytes), StandardOpenOption.CREATE_NEW);
             return storedFilename;
         } catch (IOException e) {
             log.error("Failed to store file {}: {}", storedFilename, e.getMessage());
@@ -82,6 +94,9 @@ public class DocumentStorageService {
 
     public Resource loadFileAsResource(String filename) {
         try {
+            if (filename == null || !STORED_FILENAME_PATTERN.matcher(filename).matches()) {
+                throw new SecurityException("Invalid filename");
+            }
             Path filePath = this.storageLocation.resolve(filename).normalize();
             if (!filePath.startsWith(this.storageLocation)) {
                 throw new SecurityException("Access to path outside storage is forbidden");
@@ -144,6 +159,35 @@ public class DocumentStorageService {
             }
         }
         return true;
+    }
+
+    private boolean hasAllowedSignature(String extension, byte[] bytes) {
+        if (bytes.length < 4) {
+            return false;
+        }
+        return switch (extension) {
+            case ".jpg", ".jpeg" -> (bytes[0] & 0xff) == 0xff && (bytes[1] & 0xff) == 0xd8 && (bytes[2] & 0xff) == 0xff;
+            case ".png" -> bytes.length >= 8
+                    && (bytes[0] & 0xff) == 0x89
+                    && bytes[1] == 0x50
+                    && bytes[2] == 0x4e
+                    && bytes[3] == 0x47
+                    && bytes[4] == 0x0d
+                    && bytes[5] == 0x0a
+                    && bytes[6] == 0x1a
+                    && bytes[7] == 0x0a;
+            case ".pdf" -> bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46;
+            case ".webp" -> bytes.length >= 12
+                    && bytes[0] == 0x52
+                    && bytes[1] == 0x49
+                    && bytes[2] == 0x46
+                    && bytes[3] == 0x46
+                    && bytes[8] == 0x57
+                    && bytes[9] == 0x45
+                    && bytes[10] == 0x42
+                    && bytes[11] == 0x50;
+            default -> false;
+        };
     }
 
     private byte[] sha256(String value) {

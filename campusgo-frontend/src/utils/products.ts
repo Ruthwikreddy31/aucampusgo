@@ -10,6 +10,7 @@ export function normalizeProduct(raw: Product & { category?: Product['category']
     ...raw,
     shopId: raw.shopId ?? raw.shop?.id ?? 0,
     categoryId: raw.categoryId ?? 0,
+    stock: raw.stock ?? 0,
     category:
       typeof raw.category === 'object' && raw.category?.name
         ? raw.category

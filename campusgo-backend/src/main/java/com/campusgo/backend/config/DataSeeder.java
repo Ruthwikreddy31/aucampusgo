@@ -10,6 +10,7 @@ import com.campusgo.backend.repositories.CampusSettingRepository;
 import com.campusgo.backend.repositories.ComplaintRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,12 +34,26 @@ public class DataSeeder {
         private final CampusSettingRepository campusSettingRepository;
         private final ComplaintRepository complaintRepository;
 
+        @Value("${app.seed-demo-data:false}")
+        private boolean seedDemoData;
+
+        @Value("${app.demo.admin-password:}")
+        private String demoAdminPassword;
+
+        @Value("${app.demo.student-password:}")
+        private String demoStudentPassword;
+
+        @Value("${app.demo.agent-password:}")
+        private String demoAgentPassword;
+
         @Bean
         public CommandLineRunner initData() {
                 return args -> {
+			if (seedDemoData) {
+				requireDemoPasswords();
                         // Ensure Manager accounts always exist with correct password & role
                         userRepository.findByEmail("manager@anurag.edu.in").ifPresentOrElse(m -> {
-                            m.setPassword(passwordEncoder.encode("admin123"));
+                            m.setPassword(passwordEncoder.encode(demoAdminPassword));
                             m.setRole(Role.ADMIN);
                             m.setActive(true);
                             userRepository.save(m);
@@ -46,7 +61,7 @@ public class DataSeeder {
                             User managerEdu = User.builder()
                                     .name("Admin Manager")
                                     .email("manager@anurag.edu.in")
-                                    .password(passwordEncoder.encode("admin123"))
+                                    .password(passwordEncoder.encode(demoAdminPassword))
                                     .roles(new HashSet<>(Set.of(Role.ADMIN)))
                                     .active(true)
                                     .build();
@@ -54,7 +69,7 @@ public class DataSeeder {
                         });
 
                         userRepository.findByEmail("manager@campusgo.com").ifPresentOrElse(m -> {
-                            m.setPassword(passwordEncoder.encode("admin123"));
+                            m.setPassword(passwordEncoder.encode(demoAdminPassword));
                             m.setRole(Role.ADMIN);
                             m.setActive(true);
                             userRepository.save(m);
@@ -62,7 +77,7 @@ public class DataSeeder {
                             User manager = User.builder()
                                     .name("Admin Manager")
                                     .email("manager@campusgo.com")
-                                    .password(passwordEncoder.encode("admin123"))
+                                    .password(passwordEncoder.encode(demoAdminPassword))
                                     .roles(new HashSet<>(Set.of(Role.ADMIN)))
                                     .active(true)
                                     .build();
@@ -74,7 +89,7 @@ public class DataSeeder {
                             User student = User.builder()
                                     .name("John Student")
                                     .email("23eg106c27@anurag.edu.in")
-                                    .password(passwordEncoder.encode("password123"))
+                                    .password(passwordEncoder.encode(demoStudentPassword))
                                     .roles(new HashSet<>(Set.of(Role.STUDENT)))
                                     .active(true)
                                     .build();
@@ -83,7 +98,7 @@ public class DataSeeder {
 
                         // Ensure Delivery Agents exist
                         userRepository.findByEmail("agent@anurag.edu.in").ifPresentOrElse(a -> {
-                            a.setPassword(passwordEncoder.encode("agent123"));
+                            a.setPassword(passwordEncoder.encode(demoAgentPassword));
                             a.setRole(Role.DELIVERY_PARTNER);
                             a.setActive(true);
                             userRepository.save(a);
@@ -91,7 +106,7 @@ public class DataSeeder {
                             User agentEdu = User.builder()
                                     .name("Raju Deliveries")
                                     .email("agent@anurag.edu.in")
-                                    .password(passwordEncoder.encode("agent123"))
+                                    .password(passwordEncoder.encode(demoAgentPassword))
                                     .roles(new HashSet<>(Set.of(Role.STUDENT, Role.DELIVERY_PARTNER)))
                                     .active(true)
                                     .build();
@@ -99,7 +114,7 @@ public class DataSeeder {
                         });
 
                         userRepository.findByEmail("agent@campusgo.com").ifPresentOrElse(a -> {
-                            a.setPassword(passwordEncoder.encode("agent123"));
+                            a.setPassword(passwordEncoder.encode(demoAgentPassword));
                             a.setRole(Role.DELIVERY_PARTNER);
                             a.setActive(true);
                             userRepository.save(a);
@@ -107,7 +122,7 @@ public class DataSeeder {
                             User agent = User.builder()
                                     .name("Raju Deliveries")
                                     .email("agent@campusgo.com")
-                                    .password(passwordEncoder.encode("agent123"))
+                                    .password(passwordEncoder.encode(demoAgentPassword))
                                     .roles(new HashSet<>(Set.of(Role.STUDENT, Role.DELIVERY_PARTNER)))
                                     .active(true)
                                     .build();
@@ -154,7 +169,7 @@ public class DataSeeder {
                                         User demoApplicant = User.builder()
                                                         .name("Rahul Verma")
                                                         .email("demo.applicant@anurag.edu.in")
-                                                        .password(passwordEncoder.encode("student123"))
+                                                        .password(passwordEncoder.encode(demoStudentPassword))
                                                         .roles(new HashSet<>(Set.of(Role.STUDENT)))
                                                         .active(true)
                                                         .build();
@@ -181,7 +196,7 @@ public class DataSeeder {
 							.name("Rahul Verma")
 							.email("demo.applicant@anurag.edu.in")
 							.phone("+91 98491 55443")
-							.password(passwordEncoder.encode("student123"))
+							.password(passwordEncoder.encode(demoStudentPassword))
 							.roles(new HashSet<>(Set.of(Role.STUDENT)))
 							.active(true)
 							.build();
@@ -201,6 +216,9 @@ public class DataSeeder {
 				deliveryApplicationRepository.save(pendingApp);
 				log.info("Seeded pending delivery application for Rahul Verma");
 			}
+			}
+
+			seedCampusShopInventory();
 
 			if (shopRepository.count() == 0) {
                                 log.info("Seeding initial shops...");
@@ -576,5 +594,127 @@ public class DataSeeder {
 				}
 			}
 		};
+	}
+
+	private void seedCampusShopInventory() {
+		Shop dBlock = ensureShop(
+				"D Block Canteen",
+				"Food • Snacks • Beverages",
+				"Fast food, puffs, fries, momos, biscuits, chocolates and ice creams from D Block.",
+				"D Block",
+				"https://images.unsplash.com/photo-1551782450-a2132b4ba21d?auto=format&fit=crop&w=900&q=80",
+				12,
+				4.7
+		);
+		Shop iBlock = ensureShop(
+				"I Block Canteen",
+				"Food • Snacks • Biryani",
+				"Puffs, snacks, brownie, biryani, tiffins and juices from I Block.",
+				"I Block",
+				"https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=900&q=80",
+				14,
+				4.6
+		);
+		Shop readers = ensureShop(
+				"Readers",
+				"Stationery • Snacks",
+				"Records, pens, pencils, erasers, stationery essentials and selected snacks.",
+				"Readers",
+				"https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=900&q=80",
+				8,
+				4.8
+		);
+
+		ensureProduct(dBlock, "Egg Puff", "Fast Food", "Flaky bakery puff filled with spiced egg masala.", 25, 20, "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Veg Puff", "Fast Food", "Crisp puff filled with mildly spiced vegetables.", 20, 25, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Samosa", "Fast Food", "Hot potato samosa served with chutney.", 15, 30, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Frankie", "Fast Food", "Campus-style roll with veggie filling and sauces.", 45, 18, "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "French Fries", "Fast Food", "Crispy salted fries served hot.", 50, 20, "https://images.unsplash.com/photo-1576107232684-1279f390859f?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Momos", "Fast Food", "Steamed momos with spicy chutney.", 50, 15, "https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Biscuits", "Biscuits & Snacks", "Popular packaged biscuit options.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and savory snacks.", 20, 45, "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(dBlock, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=700&q=80");
+
+		ensureProduct(iBlock, "Egg Puff", "Fast Food", "Fresh egg puff from I Block bakery counter.", 25, 20, "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Veg Puff", "Fast Food", "Vegetable puff with crisp flaky layers.", 20, 25, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Samosa", "Fast Food", "Classic hot samosa with spiced potato filling.", 15, 30, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Frankie", "Fast Food", "Soft roll with fresh filling and sauces.", 45, 18, "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Biscuits", "Biscuits & Snacks", "Packaged biscuit options.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and namkeen.", 20, 45, "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Kurkure", "Biscuits & Snacks", "Crunchy masala munch snack pack.", 20, 35, "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Brownie", "Bakery", "Soft chocolate brownie square.", 55, 18, "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Biryani", "Meals", "Campus biryani box with raita.", 120, 20, "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Tiffins", "Tiffins", "Daily tiffin specials from I Block.", 45, 25, "https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(iBlock, "Juices", "Beverages", "Fresh chilled fruit juices.", 45, 24, "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=700&q=80");
+
+		ensureProduct(readers, "Records", "Stationery", "Lab record books and ruled records.", 60, 40, "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Pens", "Stationery", "Blue and black writing pens.", 10, 100, "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Pencils", "Stationery", "Graphite pencils for classwork and drawing.", 8, 80, "https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Erasers", "Stationery", "Soft dust-free erasers.", 5, 80, "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Other Stationery Items", "Stationery", "Scale, sharpener, sticky notes and exam essentials.", 30, 50, "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Biscuits", "Biscuits", "Packaged biscuits for quick breaks.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=80");
+		ensureProduct(readers, "Chips", "Chips", "Assorted chips and wafers.", 20, 35, "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=700&q=80");
+
+		Set<String> oldDemoShops = Set.of("Campus Canteen", "Library Cafe");
+		Set<Long> oldDemoShopIds = new HashSet<>();
+		shopRepository.findAll().stream()
+				.filter(shop -> oldDemoShops.contains(shop.getName()))
+				.forEach(shop -> {
+					oldDemoShopIds.add(shop.getId());
+					shop.setActive(false);
+					shopRepository.save(shop);
+				});
+		productRepository.findAll().stream()
+				.filter(product -> product.getShop() != null && oldDemoShopIds.contains(product.getShop().getId()))
+				.forEach(product -> {
+					product.setActive(false);
+					productRepository.save(product);
+				});
+	}
+
+	private void requireDemoPasswords() {
+		if (demoAdminPassword == null || demoAdminPassword.length() < 12
+				|| demoStudentPassword == null || demoStudentPassword.length() < 12
+				|| demoAgentPassword == null || demoAgentPassword.length() < 12) {
+			throw new IllegalStateException("Demo seeding requires DEMO_ADMIN_PASSWORD, DEMO_STUDENT_PASSWORD, and DEMO_AGENT_PASSWORD with at least 12 characters.");
+		}
+	}
+
+	private Shop ensureShop(String name, String category, String description, String location, String imageUrl, int preparationTime, double rating) {
+		Shop shop = shopRepository.findAll().stream()
+				.filter(s -> s.getName().equalsIgnoreCase(name))
+				.findFirst()
+				.orElseGet(() -> Shop.builder().name(name).build());
+		shop.setCategory(category);
+		shop.setDescription(description);
+		shop.setLocation(location);
+		shop.setImageUrl(imageUrl);
+		shop.setPreparationTime(preparationTime);
+		shop.setRating(rating);
+		shop.setOpen(true);
+		shop.setActive(true);
+		return shopRepository.save(shop);
+	}
+
+	private void ensureProduct(Shop shop, String name, String category, String description, int price, int stock, String imageUrl) {
+		Product product = productRepository.findAll().stream()
+				.filter(p -> p.getShop() != null
+						&& p.getShop().getId().equals(shop.getId())
+						&& p.getName().equalsIgnoreCase(name))
+				.findFirst()
+				.orElseGet(() -> Product.builder().shop(shop).name(name).build());
+		product.setShop(shop);
+		product.setCategory(category);
+		product.setDescription(description);
+		product.setPrice(java.math.BigDecimal.valueOf(price));
+		product.setStock(stock);
+		product.setAvailable(stock > 0);
+		product.setActive(true);
+		product.setImageUrl(imageUrl);
+		productRepository.save(product);
 	}
 }
