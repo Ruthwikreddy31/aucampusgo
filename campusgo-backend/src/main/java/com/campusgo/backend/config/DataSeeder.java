@@ -189,33 +189,6 @@ public class DataSeeder {
 				}
 			}
 
-			// Ensure at least one pending application exists for admin review and testing
-			if (deliveryApplicationRepository.countByStatus(ApplicationStatus.PENDING) == 0) {
-				User demoApplicant = userRepository.findByEmail("demo.applicant@anurag.edu.in").orElseGet(() -> {
-					User u = User.builder()
-							.name("Rahul Verma")
-							.email("demo.applicant@anurag.edu.in")
-							.phone("+91 98491 55443")
-							.password(passwordEncoder.encode(demoStudentPassword))
-							.roles(new HashSet<>(Set.of(Role.STUDENT)))
-							.active(true)
-							.build();
-					return userRepository.save(u);
-				});
-
-				DeliveryPartnerApplication pendingApp = DeliveryPartnerApplication.builder()
-						.user(demoApplicant)
-						.applicantType(ApplicantType.STUDENT)
-						.status(ApplicationStatus.PENDING)
-						.studentIdCardPath("demo_student_id.jpg")
-						.timetablePath("demo_timetable.jpg")
-						.profilePhotoPath("demo_selfie.jpg")
-						.submittedAt(LocalDateTime.now().minusHours(2))
-						.studentAvailability("Mon/Wed/Fri: 1:30 PM – 4:30 PM")
-						.build();
-				deliveryApplicationRepository.save(pendingApp);
-				log.info("Seeded pending delivery application for Rahul Verma");
-			}
 			}
 
 			seedCampusShopInventory();
@@ -578,6 +551,38 @@ public class DataSeeder {
 						campusSettingRepository.save(s);
 					});
 				}
+
+				// Seed print pricing settings (idempotent)
+				campusSettingRepository.findBySettingKey("print.bw.price_per_page").ifPresentOrElse(
+						s -> { /* already set */ },
+						() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("print.bw.price_per_page").settingValue("2")
+								.description("Print service: cost per page for Black & White (INR)").build())
+				);
+				campusSettingRepository.findBySettingKey("print.color.price_per_page").ifPresentOrElse(
+						s -> { /* already set */ },
+						() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("print.color.price_per_page").settingValue("5")
+								.description("Print service: cost per page for Color printing (INR)").build())
+				);
+				campusSettingRepository.findBySettingKey("platform.fee").ifPresentOrElse(
+						s -> { /* already set */ },
+						() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("platform.fee").settingValue("5")
+								.description("CampusGo platform convenience fee charged once per order (INR)").build())
+				);
+				campusSettingRepository.findBySettingKey("print.max_file_size_mb").ifPresentOrElse(
+						s -> { /* already set */ },
+						() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("print.max_file_size_mb").settingValue("20")
+								.description("Maximum allowed file upload size in MB for print service").build())
+				);
+				campusSettingRepository.findBySettingKey("print.supported_formats").ifPresentOrElse(
+						s -> { /* already set */ },
+						() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("print.supported_formats").settingValue(".pdf,.doc,.docx,.ppt,.pptx,.jpg,.png")
+								.description("Supported document file extensions for printing").build())
+				);
 
 				// Seed sample complaint if not present
 				if (complaintRepository.count() == 0) {

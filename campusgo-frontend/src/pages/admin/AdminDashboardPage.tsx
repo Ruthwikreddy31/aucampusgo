@@ -126,12 +126,12 @@ export default function AdminDashboardPage() {
     },
     {
       label: 'Pending Partner Requests',
-      value: pendingApps.length > 0 ? pendingApps.length : (stats?.pendingRequests || 0),
-      sub: 'Requires verification review',
+      value: pendingApps.length,
+      sub: pendingApps.length > 0 ? 'Requires verification review' : 'All applications reviewed',
       icon: Clock,
       color: 'from-amber-600 to-orange-600',
       textColor: 'text-amber-400',
-      highlight: pendingApps.length > 0 || (stats?.pendingRequests || 0) > 0,
+      highlight: pendingApps.length > 0,
     },
     {
       label: "Today's Orders",
@@ -207,14 +207,16 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Actionable Alerts Banner */}
-      {((pendingApps.length > 0 || (stats?.pendingRequests || 0) > 0) || (stats?.openComplaints || 0) > 0) && (
+      {(pendingApps.length > 0 || (stats?.openComplaints || 0) > 0) && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-6 w-6 text-amber-400 shrink-0" />
             <div className="space-y-0.5">
               <p className="font-extrabold text-sm text-white">Pending Operational Actions</p>
               <p className="text-xs text-amber-300">
-                {pendingApps.length || stats?.pendingRequests || 0} delivery partner applications awaiting admin verification.
+                {pendingApps.length > 0
+                  ? `${pendingApps.length} delivery partner application(s) awaiting admin verification.`
+                  : `${stats?.openComplaints || 0} open customer complaints require attention.`}
               </p>
             </div>
           </div>
@@ -333,34 +335,16 @@ export default function AdminDashboardPage() {
 
           if (filtered.length === 0) {
             return (
-              <div className="py-8 text-center text-slate-400 text-xs space-y-3">
-                <p>No delivery partner applications found under "{appFilter}".</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const sampleApp: DeliveryPartnerApplication = {
-                      id: Date.now(),
-                      userId: 205,
-                      userName: 'Vikram Chary (Student)',
-                      userEmail: '23eg106c55@anurag.edu.in',
-                      userPhone: '+91 98492 77889',
-                      applicantType: 'STUDENT',
-                      status: 'PENDING',
-                      studentIdCardPath: 'demo_student_id.jpg',
-                      timetablePath: 'demo_timetable.jpg',
-                      profilePhotoPath: 'demo_selfie.jpg',
-                      studentAvailability: 'Free slots: Mon–Fri 1:30 PM – 4:30 PM',
-                      submittedAt: new Date().toISOString(),
-                    }
-                    const current = [sampleApp, ...applications]
-                    setApplications(current)
-                    localStorage.setItem('campusgo_delivery_apps', JSON.stringify(current))
-                    toast.success('Sample delivery partner application created for admin review!')
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer shadow-sm"
-                >
-                  <Plus size={14} /> Add Sample Partner Application
-                </button>
+              <div className="py-10 text-center text-slate-400 text-xs space-y-2">
+                <CheckCircle2 size={32} className="mx-auto text-emerald-400 mb-1" />
+                <p className="font-bold text-white text-sm">
+                  {appFilter === 'PENDING' ? 'All Partner Requests Verified' : `No applications found under "${appFilter}"`}
+                </p>
+                <p className="text-slate-400">
+                  {appFilter === 'PENDING'
+                    ? 'Great job! There are currently no pending delivery partner applications waiting for admin approval.'
+                    : `No applications with status "${appFilter}" were found.`}
+                </p>
               </div>
             )
           }

@@ -1,0 +1,214 @@
+package com.campusgo.backend.services;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+/**
+ * Secure storage service specifically for print documents.
+ * Supports PDF, DOC, DOCX, PPT, PPTX, JPG, PNG.
+ * Files are AES-GCM encrypted at rest.
+ */
+@Service
+@Slf4j
+public class PrintStorageService {
+
+    private final Path storageLocation = Paths.get("uploads", "print_documents").toAbsolutePath().normalize();
+
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList(
+            ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png"
+    );
+
+    private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB for print documents
+
+    // Stored files are UUID.ext — allow office extensions too
+    private static final Pattern STORED_FILENAME_PATTERN = Pattern.compile(
+            "^[a-f0-9\\-]{36}\\.(pdf|doc|docx|ppt|pptx|jpg|jpeg|png)$",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    private static final byte[] ENCRYPTION_MARKER = "CGPRT1".getBytes();
+    private static final int GCM_IV_LENGTH = 12;
+    private static final int GCM_TAG_LENGTH_BITS = 128;
+
+    private final SecretKeySpec storageKey;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    public PrintStorageService(@Value("${app.documents.encryption-key:${app.jwt.secret}}") String encryptionKey) {
+        this.storageKey = new SecretKeySpec(sha256(encryptionKey), "AES");
+        try {
+            Files.createDirectories(this.storageLocation);
+        } catch (IOException e) {
+            log.error("Could not create directory for print document storage: {}", e.getMessage());
+            throw new RuntimeException("Could not initialize print document storage", e);
+        }
+    }
+
+    /**
+     * Validates, encrypts, and stores the uploaded print file.
+     * @return the stored (UUID-based) filename
+     */
+    public String storeFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Cannot store empty file");
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("File size exceeds 20MB limit");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = "document.pdf";
+        }
+
+        String extension = "";
+        int dotIdx = originalFilename.lastIndexOf('.');
+        if (dotIdx >= 0) {
+            extension = originalFilename.substring(dotIdx).toLowerCase();
+        }
+
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException(
+                    "File type " + extension + " is not allowed. Supported: PDF, DOC, DOCX, PPT, PPTX, JPG, PNG."
+            );
+        }
+
+        byte[] plainBytes;
+        try {
+            plainBytes = file.getBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read uploaded file", e);
+        }
+
+        // Basic magic-byte checks for PDF, JPG, PNG; office formats skip (no simple magic bytes)
+        if (!hasAllowedSignature(extension, plainBytes)) {
+            throw new IllegalArgumentException("Uploaded file content does not match the declared file type.");
+        }
+
+        String storedFilename = UUID.randomUUID().toString() + extension;
+
+        try {
+            Path targetLocation = this.storageLocation.resolve(storedFilename);
+            Files.write(targetLocation, encrypt(plainBytes), StandardOpenOption.CREATE_NEW);
+            return storedFilename;
+        } catch (IOException e) {
+            log.error("Failed to store print file {}: {}", storedFilename, e.getMessage());
+            throw new RuntimeException("Failed to store print file", e);
+        }
+    }
+
+    /**
+     * Loads and decrypts a stored print file.
+     * @param filename the UUID-based stored filename
+     * @return a Spring Resource containing the decrypted bytes
+     */
+    public Resource loadFileAsResource(String filename) {
+        if (filename == null || !STORED_FILENAME_PATTERN.matcher(filename).matches()) {
+            throw new SecurityException("Invalid print file name");
+        }
+        Path filePath = this.storageLocation.resolve(filename).normalize();
+        if (!filePath.startsWith(this.storageLocation)) {
+            throw new SecurityException("Access to path outside storage is forbidden");
+        }
+        if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
+            throw new RuntimeException("Print file not found: " + filename);
+        }
+        try {
+            byte[] storedBytes = Files.readAllBytes(filePath);
+            byte[] plainBytes = isEncrypted(storedBytes) ? decrypt(storedBytes) : storedBytes;
+            return new ByteArrayResource(plainBytes) {
+                @Override
+                public String getFilename() {
+                    return filename;
+                }
+            };
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading print file: " + filename, e);
+        }
+    }
+
+    /** Returns the maximum allowed file size in bytes. */
+    public long getMaxFileSizeBytes() {
+        return MAX_FILE_SIZE;
+    }
+
+    // ─────────────────────────────────────────────
+    // Encryption helpers (AES-256-GCM)
+    // ─────────────────────────────────────────────
+
+    private byte[] encrypt(byte[] plainBytes) {
+        try {
+            byte[] iv = new byte[GCM_IV_LENGTH];
+            secureRandom.nextBytes(iv);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, storageKey, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            byte[] cipherText = cipher.doFinal(plainBytes);
+            byte[] result = new byte[ENCRYPTION_MARKER.length + iv.length + cipherText.length];
+            System.arraycopy(ENCRYPTION_MARKER, 0, result, 0, ENCRYPTION_MARKER.length);
+            System.arraycopy(iv, 0, result, ENCRYPTION_MARKER.length, iv.length);
+            System.arraycopy(cipherText, 0, result, ENCRYPTION_MARKER.length + iv.length, cipherText.length);
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to encrypt print file", e);
+        }
+    }
+
+    private byte[] decrypt(byte[] storedBytes) {
+        try {
+            byte[] iv = Arrays.copyOfRange(storedBytes, ENCRYPTION_MARKER.length, ENCRYPTION_MARKER.length + GCM_IV_LENGTH);
+            byte[] cipherText = Arrays.copyOfRange(storedBytes, ENCRYPTION_MARKER.length + GCM_IV_LENGTH, storedBytes.length);
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, storageKey, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            return cipher.doFinal(cipherText);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to decrypt print file", e);
+        }
+    }
+
+    private boolean isEncrypted(byte[] storedBytes) {
+        if (storedBytes.length < ENCRYPTION_MARKER.length + GCM_IV_LENGTH) return false;
+        for (int i = 0; i < ENCRYPTION_MARKER.length; i++) {
+            if (storedBytes[i] != ENCRYPTION_MARKER[i]) return false;
+        }
+        return true;
+    }
+
+    private boolean hasAllowedSignature(String extension, byte[] bytes) {
+        if (bytes.length < 4) return false;
+        return switch (extension) {
+            case ".jpg", ".jpeg" -> (bytes[0] & 0xff) == 0xff && (bytes[1] & 0xff) == 0xd8 && (bytes[2] & 0xff) == 0xff;
+            case ".png" -> bytes.length >= 8
+                    && (bytes[0] & 0xff) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4e && bytes[3] == 0x47;
+            case ".pdf" -> bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46;
+            // Office Open XML formats start with PK zip header
+            case ".docx", ".pptx" -> bytes[0] == 0x50 && bytes[1] == 0x4b;
+            // Legacy binary Office formats — skip strict check, rely on extension
+            case ".doc", ".ppt" -> true;
+            default -> false;
+        };
+    }
+
+    private byte[] sha256(String value) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(value.getBytes());
+        } catch (Exception e) {
+            throw new RuntimeException("Could not initialize print encryption key", e);
+        }
+    }
+}

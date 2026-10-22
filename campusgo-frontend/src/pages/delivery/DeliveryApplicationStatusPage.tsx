@@ -118,6 +118,11 @@ export default function DeliveryApplicationStatusPage() {
     )
   }
 
+  const isApproved =
+    application.status === 'APPROVED' ||
+    user?.role === 'DELIVERY_PARTNER' ||
+    Boolean(user?.roles && (Array.isArray(user.roles) ? user.roles.includes('DELIVERY_PARTNER') : false))
+
   const { status, applicantType, rejectionReason, submittedAt } = application
 
   return (
@@ -145,7 +150,7 @@ export default function DeliveryApplicationStatusPage() {
       </div>
 
       {/* ── 1. APPROVED STATE: Admin Approved -> Can Deliver ── */}
-      {status === 'APPROVED' && (
+      {isApproved && (
         <div className="space-y-6">
           <div className="rounded-[32px] border-2 border-emerald-300 bg-gradient-to-b from-emerald-50/70 via-white to-white p-6 sm:p-10 text-center shadow-[var(--shadow-soft)] relative overflow-hidden">
             {/* Sparkle decorative */}
@@ -312,7 +317,7 @@ export default function DeliveryApplicationStatusPage() {
       )}
 
       {/* ── 3. PENDING / UNDER_REVIEW STATE: Pending Admin Review ── */}
-      {(status === 'PENDING' || status === 'UNDER_REVIEW') && (
+      {!isApproved && (status === 'PENDING' || status === 'UNDER_REVIEW') && (
         <div className="space-y-6">
           <div className="rounded-[32px] border-2 border-amber-300 bg-gradient-to-b from-amber-50/70 via-white to-white p-6 sm:p-10 text-center shadow-[var(--shadow-soft)] relative overflow-hidden">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-amber-600 shadow-inner animate-pulse">

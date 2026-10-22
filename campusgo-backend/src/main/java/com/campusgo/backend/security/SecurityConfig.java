@@ -82,6 +82,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> 
                     auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/shops/**", "/api/products/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/print/settings", "/api/print/quote").permitAll()
                         .requestMatchers("/ws/**", "/ws-raw/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

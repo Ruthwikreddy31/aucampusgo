@@ -22,6 +22,7 @@ public class ZestBiddingService {
     private final DeliveryAssignmentRepository assignmentRepository;
     private final OrderRepository orderRepository;
     private final DeliveryAgentRepository agentRepository;
+    private final DeliveryApplicationRepository applicationRepository;
     private final DeliveryPartnerDailyFeeRepository dailyFeeRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
@@ -102,17 +103,31 @@ public class ZestBiddingService {
             return false;
         }
 
-        Optional<DeliveryAgent> agentOpt = agentRepository.findByUserId(user.getId());
-        if (agentOpt.isEmpty()) {
-            agentRepository.save(DeliveryAgent.builder()
-                    .user(user)
-                    .availabilityStatus("AVAILABLE")
-                    .partnerStatus("ACTIVE")
-                    .build());
-            agentOpt = agentRepository.findByUserId(user.getId());
+        // Partner must be approved by admin
+        Optional<DeliveryPartnerApplication> appOpt = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId());
+        if (appOpt.isEmpty() || appOpt.get().getStatus() != ApplicationStatus.APPROVED) {
+            return false;
         }
 
-        DeliveryAgent agent = agentOpt.get();
+        DeliveryAgent agent = agentRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    DeliveryAgent newAgent = DeliveryAgent.builder()
+                            .user(user)
+                            .availabilityStatus("AVAILABLE")
+                            .partnerStatus("ACTIVE")
+                            .build();
+                    return agentRepository.save(newAgent);
+                });
+
+        if (agent.getPartnerStatus() == null) {
+            agent.setPartnerStatus("ACTIVE");
+            agent = agentRepository.save(agent);
+        }
+        if (agent.getAvailabilityStatus() == null) {
+            agent.setAvailabilityStatus("AVAILABLE");
+            agent = agentRepository.save(agent);
+        }
+
         if (!"ACTIVE".equalsIgnoreCase(agent.getPartnerStatus()) || "OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())) {
             return false;
         }
@@ -242,10 +257,18 @@ public class ZestBiddingService {
                 "Delivery bidding opened",
                 "Delivery partners can now bid for order " + order.getOrderNumber() + ".",
                 "BIDDING_OPENED");
-        notificationService.notifyRole(Role.DELIVERY_PARTNER, order.getId(),
-                "New delivery opportunity",
-                "Order " + order.getOrderNumber() + " is open for bidding. Submit your delivery fee bid.",
-                "DELIVERY_OPPORTUNITY");
+        // Find only Delivery Partners whose status is ACTIVE and eligible to receive delivery requests
+        List<DeliveryAgent> allAgents = agentRepository.findAll();
+        for (DeliveryAgent agent : allAgents) {
+            if (agent.getUser() != null
+                    && !"OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())
+                    && isEligiblePartner(agent.getUser())) {
+                notificationService.notifyUser(agent.getUser().getId(), order.getId(),
+                        "New delivery opportunity",
+                        "Order " + order.getOrderNumber() + " is open for bidding. Submit your delivery fee bid.",
+                        "DELIVERY_OPPORTUNITY");
+            }
+        }
         return saved;
     }
 

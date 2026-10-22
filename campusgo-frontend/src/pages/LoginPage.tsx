@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [error, setError] = useState('')
+  const [devOtp, setDevOtp] = useState('')
 
   const validateEmail = (val: string) => {
     if (!COLLEGE_EMAIL_REGEX.test(val)) {
@@ -30,9 +31,15 @@ export default function LoginPage() {
     if (!validateEmail(email)) return
 
     try {
-      await sendOtp(email)
+      const res = await sendOtp(email)
       setOtpSent(true)
-      toast.success(`OTP sent successfully to ${email}!`)
+      if (res?.otp) {
+        setDevOtp(res.otp)
+        setOtp(res.otp)
+        toast.info(`OTP generated: ${res.otp}`, { duration: 8000 })
+      } else {
+        toast.success(`OTP sent successfully to ${email}!`)
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setError(msg || 'Failed to send OTP. Please check your college email.')
@@ -155,6 +162,13 @@ export default function LoginPage() {
                 </div>
                 <div className="text-xs font-bold text-[var(--color-text)] truncate">{email}</div>
               </div>
+
+              {devOtp && (
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs font-semibold text-amber-700 flex items-center justify-between">
+                  <span>Verification Code:</span>
+                  <span className="font-mono font-bold tracking-widest text-base text-[var(--color-primary)]">{devOtp}</span>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-xs font-extrabold text-[var(--color-text-muted)] uppercase tracking-wider">

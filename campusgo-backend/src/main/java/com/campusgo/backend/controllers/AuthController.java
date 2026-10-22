@@ -23,10 +23,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @RestController
@@ -41,6 +45,7 @@ public class AuthController {
     private final OtpService otpService;
     private final EmailService emailService;
     private final GoogleAuthService googleAuthService;
+    private final PasswordEncoder passwordEncoder;
 
     @org.springframework.beans.factory.annotation.Value("${app.otp.expose-in-response:false}")
     private boolean exposeOtpInResponse;
@@ -83,29 +88,29 @@ public class AuthController {
         try {
             GoogleAuthService.GoogleUserInfo googleUser = googleAuthService.verifyAndValidateDomain(request.getIdToken());
             String email = googleUser.getEmail().toLowerCase().trim();
-            String rollNumber = email.substring(0, email.indexOf("@"));
+            String rollNumber = email.contains("@") ? email.substring(0, email.indexOf("@")) : email;
+            String googleProfileName = googleUser.getName();
 
             User user = userRepository.findByEmail(email).orElse(null);
             if (user == null) {
-                Map<String, Object> err = new HashMap<>();
-                err.put("message", "No approved student account found for roll number " + rollNumber + ". Please contact campus administration.");
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
-            }
-
-            if (!user.isActive()) {
+                user = User.builder()
+                        .name(googleProfileName != null && !googleProfileName.isBlank() ? googleProfileName.trim() : "Student (" + rollNumber.toUpperCase() + ")")
+                        .email(email)
+                        .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                        .roles(new HashSet<>(Set.of(Role.STUDENT)))
+                        .active(true)
+                        .build();
+                user = userRepository.save(user);
+                log.info("Auto-registered new student account via Google for email [{}]", email);
+            } else if (!user.isActive()) {
                 Map<String, Object> err = new HashMap<>();
                 err.put("message", "Your student account is not approved or has been deactivated. Please contact campus administration.");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
-            }
-
-            if (!user.hasRole(Role.STUDENT)) {
+            } else if (!user.hasRole(Role.STUDENT)) {
                 Map<String, Object> err = new HashMap<>();
                 err.put("message", "Google customer login is only available for approved student accounts.");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
-            }
-
-            String googleProfileName = googleUser.getName();
-            if (googleProfileName != null && !googleProfileName.isBlank()
+            } else if (googleProfileName != null && !googleProfileName.isBlank()
                     && !googleProfileName.trim().equals(user.getName())) {
                 user.setName(googleProfileName.trim());
                 user = userRepository.save(user);
@@ -148,9 +153,20 @@ public class AuthController {
         }
 
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || !user.isActive() || !user.hasRole(Role.STUDENT)) {
+        if (user == null) {
+            String rollNumber = email.contains("@") ? email.substring(0, email.indexOf("@")) : email;
+            user = User.builder()
+                    .name("Student (" + rollNumber.toUpperCase() + ")")
+                    .email(email)
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .roles(new HashSet<>(Set.of(Role.STUDENT)))
+                    .active(true)
+                    .build();
+            user = userRepository.save(user);
+            log.info("Auto-registered new student account for college email [{}]", email);
+        } else if (!user.isActive()) {
             Map<String, Object> err = new HashMap<>();
-            err.put("message", "No approved active student account found for this college email.");
+            err.put("message", "Your student account has been deactivated. Please contact campus administration.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
         }
 
@@ -207,8 +223,11 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser(
+    public ResponseEntity<?> getCurrentUser(
             @org.springframework.security.core.annotation.AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Authentication required"));
+        }
         return userRepository.findById(userDetails.getId())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

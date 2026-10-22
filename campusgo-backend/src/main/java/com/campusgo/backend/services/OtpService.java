@@ -42,7 +42,7 @@ public class OtpService {
         LocalDateTime expiry = LocalDateTime.now().plusMinutes(OTP_EXPIRE_MINUTES);
         otpMap.put(cleanEmail, new OtpData(otp, expiry, 0));
 
-        log.info("Generated OTP for email [{}] expiring at [{}]", cleanEmail, expiry);
+        log.info("Generated OTP [{}] for email [{}] expiring at [{}]", otp, cleanEmail, expiry);
         return otp;
     }
 

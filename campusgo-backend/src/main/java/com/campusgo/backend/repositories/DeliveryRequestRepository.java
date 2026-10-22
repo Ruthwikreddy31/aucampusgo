@@ -18,7 +18,6 @@ public interface DeliveryRequestRepository extends JpaRepository<DeliveryRequest
     List<DeliveryRequest> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
     List<DeliveryRequest> findByStatusAndBidEndAtBefore(String status, LocalDateTime time);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select r from DeliveryRequest r where r.id = :id")
-    Optional<DeliveryRequest> findByIdForUpdate(Long id);
+    @Query(value = "SELECT * FROM delivery_requests WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<DeliveryRequest> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 }

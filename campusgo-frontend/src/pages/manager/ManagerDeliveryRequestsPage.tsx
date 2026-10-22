@@ -37,9 +37,9 @@ export default function ManagerDeliveryRequestsPage() {
   // Document preview lightbox modal
   const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string; isPdf?: boolean } | null>(null)
 
-  const loadApplications = useCallback((isManual = false) => {
+  const loadApplications = useCallback((isManual = false, isBackground = false) => {
     if (isManual) setIsRefreshing(true)
-    else setLoading(true)
+    else if (!isBackground) setLoading(true)
     const statusParam = selectedStatus === 'ALL' ? undefined : selectedStatus
     deliveryApplicationService.getAdminApplications(statusParam)
       .then((apps) => {
@@ -48,26 +48,26 @@ export default function ManagerDeliveryRequestsPage() {
       })
       .catch((err) => {
         console.error('Failed to load applications:', err)
-        if (!isManual) toast.error('Failed to load delivery partner requests')
+        if (!isManual && !isBackground) toast.error('Failed to load delivery partner requests')
       })
       .finally(() => {
-        setLoading(false)
-        setIsRefreshing(false)
+        if (!isBackground) setLoading(false)
+        if (isManual) setIsRefreshing(false)
       })
   }, [selectedStatus])
 
   useEffect(() => {
     loadApplications()
 
-    const handleUpdate = () => loadApplications()
+    const handleUpdate = () => loadApplications(false, true)
 
     window.addEventListener('campusgo-delivery-apps-updated', handleUpdate)
     window.addEventListener('campusgo-application-submitted', handleUpdate)
     window.addEventListener('campusgo-application-approved', handleUpdate)
     window.addEventListener('storage', handleUpdate)
 
-    // Auto-poll every 3 seconds to catch new submissions in real time
-    const interval = setInterval(() => loadApplications(), 3000)
+    // Auto-poll every 3 seconds in background to catch new submissions
+    const interval = setInterval(() => loadApplications(false, true), 3000)
 
     return () => {
       window.removeEventListener('campusgo-delivery-apps-updated', handleUpdate)

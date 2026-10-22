@@ -5,6 +5,7 @@ import {
   Navigation,
   Timer,
   Zap,
+  Printer,
 } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -163,6 +164,20 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Platform Fee per Order (₹)
+              </label>
+              <input
+                type="number"
+                value={settings['platform.fee'] || '5'}
+                onChange={(e) => handleChange('platform.fee', e.target.value)}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
+                min={0}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Charged once per order across food, drinks, and print services (Default: ₹5).</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                 Maintenance Mode
               </label>
               <select
@@ -173,6 +188,78 @@ export default function AdminSettingsPage() {
                 <option value="false">Live & Operational (Normal)</option>
                 <option value="true">Active Maintenance (Pause Ordering)</option>
               </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Printing & Xerox Service Configuration (Section 23 Admin Requirement) */}
+        <div className="rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-cyan-500/20">
+            <Printer size={18} className="text-cyan-400" />
+            <h2 className="font-extrabold text-white text-base">Printing & Xerox Configuration (Readers Shop)</h2>
+            <span className="ml-auto px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest">Readers</span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Configure per-page printing rates, supported document formats, and upload limits for campus xerox and printing services.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                B&W Price per Page (₹)
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                value={settings['print.bw.price_per_page'] || '2.00'}
+                onChange={(e) => handleChange('print.bw.price_per_page', e.target.value)}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500"
+                min={0.5}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Default black and white xerox rate (e.g. ₹2.00/page).</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Color Price per Page (₹)
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                value={settings['print.color.price_per_page'] || '5.00'}
+                onChange={(e) => handleChange('print.color.price_per_page', e.target.value)}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500"
+                min={1}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Default color print rate (e.g. ₹5.00/page).</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Maximum Upload Size (MB)
+              </label>
+              <input
+                type="number"
+                value={settings['print.max_file_size_mb'] || '20'}
+                onChange={(e) => handleChange('print.max_file_size_mb', e.target.value)}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500"
+                min={1} max={100}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Maximum allowed file size per student document upload.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Supported File Formats
+              </label>
+              <input
+                type="text"
+                value={settings['print.supported_formats'] || '.pdf,.doc,.docx,.ppt,.pptx,.jpg,.png'}
+                onChange={(e) => handleChange('print.supported_formats', e.target.value)}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500"
+                placeholder=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.png"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Comma-separated allowed extensions.</p>
             </div>
           </div>
         </div>

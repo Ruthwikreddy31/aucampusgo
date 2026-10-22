@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class OrderController {
     private final ZestEventPublisher eventPublisher;
     private final NotificationService notificationService;
     private final ReviewRepository reviewRepository;
+    private final ApplicationContext applicationContext;
 
     @Value("${app.campus.latitude:17.4018}")
     private double defaultCampusLat;
@@ -214,6 +216,7 @@ public class OrderController {
 
         BigDecimal deliveryFee = new BigDecimal("15.00");
         BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal printingCost = BigDecimal.ZERO;
         Shop orderShop = null;
 
         String deliveryOtp = String.format("%04d", ThreadLocalRandom.current().nextInt(1000, 10000));
@@ -244,6 +247,7 @@ public class OrderController {
                 .deliveryLongitude(request.getLongitude())
                 .deliveryOtp(deliveryOtp)
                 .deliveryOtpVerified(false)
+                .printJobId(request.getPrintJobId())
                 .build();
 
         for (OrderItemRequest itemReq : request.getItems()) {
@@ -275,9 +279,28 @@ public class OrderController {
             subtotal = subtotal.add(linePrice.multiply(BigDecimal.valueOf(qty)));
         }
 
+        // Resolve printingCost from linked PrintJob if present
+        if (request.getPrintJobId() != null) {
+            com.campusgo.backend.repositories.PrintJobRepository printRepo =
+                    applicationContext.getBean(com.campusgo.backend.repositories.PrintJobRepository.class);
+            printRepo.findById(request.getPrintJobId()).ifPresent(pj -> {
+                // Only allow the job owner to attach it
+                if (pj.getUser().getId().equals(user.getId()) && "UPLOADED".equals(pj.getPrintStatus())) {
+                    pj.setPrintStatus("PENDING");
+                    printRepo.save(pj);
+                }
+            });
+            // Get cost from PrintJob
+            var pjOpt = printRepo.findById(request.getPrintJobId());
+            if (pjOpt.isPresent()) {
+                printingCost = pjOpt.get().getPrintingCost() != null ? pjOpt.get().getPrintingCost() : BigDecimal.ZERO;
+            }
+        }
+
         order.setShop(orderShop);
         order.setSubtotal(subtotal);
-        order.setTotalAmount(subtotal.add(deliveryFee).add(new BigDecimal("5.00")));
+        order.setPrintingCost(printingCost);
+        order.setTotalAmount(subtotal.add(printingCost).add(deliveryFee).add(new BigDecimal("5.00")));
 
         Order saved = orderRepository.save(order);
         biddingService.recordStatusHistory(saved.getId(), null, OrderStatus.PLACED.name(), user.getName(), "Order placed");
@@ -289,11 +312,14 @@ public class OrderController {
             log.error("Failed to create parallel delivery request for order {}: {}", saved.getOrderNumber(), e.getMessage());
         }
 
-        // PROCESS 1: Immediately notify manager / canteen
-        notificationService.notifyUser(user.getId(), saved.getId(), "Order placed",
-                "Your order " + saved.getOrderNumber() + " was placed successfully. Delivery bidding is now open.", "ORDER_PLACED");
-        notificationService.notifyRole(Role.MANAGER, saved.getId(), "New order received",
-                "Order " + saved.getOrderNumber() + " is waiting for acceptance.", "NEW_ORDER");
+        // PROCESS 1: Immediately identify correct Kitchen Manager based on the shop and send order to them
+        if (orderShop != null && orderShop.getManagerUserId() != null) {
+            notificationService.notifyUser(orderShop.getManagerUserId(), saved.getId(), "New order received",
+                    "Order " + saved.getOrderNumber() + " for " + orderShop.getName() + " received. Ready for preparation.", "NEW_ORDER");
+        } else {
+            notificationService.notifyRole(Role.MANAGER, saved.getId(), "New order received",
+                    "Order " + saved.getOrderNumber() + " is waiting for acceptance.", "NEW_ORDER");
+        }
         notificationService.notifyRole(Role.CANTEEN_MEMBER, saved.getId(), "New order received",
                 "Order " + saved.getOrderNumber() + " is waiting for acceptance.", "NEW_ORDER");
         eventPublisher.publishOrderStatusChanged(saved.getId(), OrderStatus.PLACED.name(), saved);

@@ -83,6 +83,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const customerNav = [
     { label: 'Home', to: '/home' },
     { label: 'Shops', to: '/shops' },
+    { label: 'Print / Xerox', to: '/print' },
     { label: 'Cart', to: '/cart' },
     { label: 'Orders', to: '/orders' },
     { label: 'Track Order', to: '/orders' },

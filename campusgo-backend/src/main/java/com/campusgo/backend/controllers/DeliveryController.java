@@ -57,8 +57,16 @@ public class DeliveryController {
             return false;
         }
         DeliveryAgent agent = getOrCreateAgent(user);
+        if (agent.getPartnerStatus() == null) {
+            agent.setPartnerStatus("ACTIVE");
+            agent = deliveryAgentRepository.save(agent);
+        }
+        if (agent.getAvailabilityStatus() == null) {
+            agent.setAvailabilityStatus("AVAILABLE");
+            agent = deliveryAgentRepository.save(agent);
+        }
         boolean activePartner = "ACTIVE".equalsIgnoreCase(agent.getPartnerStatus());
-        boolean available = "AVAILABLE".equalsIgnoreCase(agent.getAvailabilityStatus());
+        boolean available = !"OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus());
         return activePartner && available;
     }
 
@@ -142,6 +150,12 @@ public class DeliveryController {
         User user = userRepository.findById(userDetails.getId()).orElseThrow();
         if (!isApprovedDeliveryPartner(user)) {
             return ResponseEntity.status(403).body(Map.of("message", "Delivery partner approval required"));
+        }
+
+        // Only ACTIVE + AVAILABLE (eligible) partners can see open bidding orders
+        if (!isEligibleDeliveryPartner(user)) {
+            log.info("Delivery partner {} is approved but not eligible (ACTIVE+AVAILABLE) to view open orders", user.getName());
+            return ResponseEntity.ok(List.of());
         }
 
         // Return all orders whose biddingStatus is OPEN so delivery partners can bid

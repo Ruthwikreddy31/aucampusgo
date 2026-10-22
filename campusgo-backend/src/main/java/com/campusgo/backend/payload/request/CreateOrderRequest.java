@@ -50,4 +50,7 @@ public class CreateOrderRequest {
     @NotEmpty
     @Size(max = 50)
     private List<OrderItemRequest> items;
+
+    /** Optional: ID of a PrintJob created via POST /api/print/upload. */
+    private Long printJobId;
 }

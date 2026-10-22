@@ -42,8 +42,7 @@ function getStoredApps(): DeliveryPartnerApplication[] {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
     }
-    // Seed initial demo applications so admin always has pending requests to review
-    localStorage.setItem(LOCAL_APPS_KEY, JSON.stringify(INITIAL_DEMO_APPS))
+    // Only seed demo apps for admin list display — never seed for real user's own status
     return INITIAL_DEMO_APPS
   } catch {
     return INITIAL_DEMO_APPS
@@ -108,17 +107,51 @@ export const deliveryApplicationService = {
   },
 
   async getMyStatus(): Promise<DeliveryPartnerApplication | null> {
+    const user = getCurrentUser()
     try {
-      const res = await api.get<DeliveryPartnerApplication | null>('/api/delivery-applications/my-status')
-      if (res.data) return res.data
-      const user = getCurrentUser()
-      const apps = getStoredApps()
-      return apps.find((a) => a.userId === user?.id || a.userEmail === user?.email) || null
+      const res = await api.get<any>('/api/delivery-applications/my-status')
+      if (res.data && res.data.id && res.data.status) {
+        const app: DeliveryPartnerApplication = res.data
+        // Sync local storage cache
+        const apps = getStoredApps().filter((a) => a.id < 900)
+        const updated = [app, ...apps.filter((a) => a.id !== app.id && a.userId !== app.userId)]
+        saveStoredApps(updated)
+        return app
+      }
+      // If user already has DELIVERY_PARTNER role, synthesize approved application
+      if (user && (user.role === 'DELIVERY_PARTNER' || user.roles?.includes('DELIVERY_PARTNER'))) {
+        return {
+          id: -1,
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          userPhone: user.phone,
+          applicantType: 'STUDENT',
+          status: 'APPROVED',
+          submittedAt: new Date().toISOString(),
+          reviewedAt: new Date().toISOString(),
+        }
+      }
+      return null
     } catch {
-      const user = getCurrentUser()
-      const apps = getStoredApps()
+      // Fallback to localStorage on network error
+      const apps = getStoredApps().filter((a) => a.id < 900)
       const found = apps.find((a) => a.userId === user?.id || a.userEmail === user?.email)
-      return found || null
+      if (found) return found
+      if (user && (user.role === 'DELIVERY_PARTNER' || user.roles?.includes('DELIVERY_PARTNER'))) {
+        return {
+          id: -1,
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          userPhone: user.phone,
+          applicantType: 'STUDENT',
+          status: 'APPROVED',
+          submittedAt: new Date().toISOString(),
+          reviewedAt: new Date().toISOString(),
+        }
+      }
+      return null
     }
   },
 
@@ -157,21 +190,13 @@ export const deliveryApplicationService = {
     try {
       const params = status ? { status } : {}
       const res = await api.get<DeliveryPartnerApplication[]>('/api/delivery-applications/admin', { params })
-      const backendList = Array.isArray(res.data) ? res.data : []
-      if (backendList.length > 0) {
-        const local = getStoredApps()
-        const mergedMap = new Map<number, DeliveryPartnerApplication>()
-        backendList.forEach((a) => mergedMap.set(a.id, a))
-        local.forEach((a) => {
-          if (!mergedMap.has(a.id)) {
-            mergedMap.set(a.id, a)
-          }
-        })
-        const merged = Array.from(mergedMap.values()).sort(
+      if (Array.isArray(res.data)) {
+        // Backend is online and authoritative — only use backend records, NO fake demo apps
+        const list = res.data.sort(
           (a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime()
         )
-        saveStoredApps(merged)
-        return status ? merged.filter((a) => a.status === status) : merged
+        try { localStorage.setItem(LOCAL_APPS_KEY, JSON.stringify(list)) } catch {}
+        return status ? list.filter((a) => a.status === status) : list
       }
     } catch (err) {
       console.warn('Backend getAdminApplications unreachable, returning local applications:', err)
@@ -193,32 +218,8 @@ export const deliveryApplicationService = {
   },
 
   async approveApplication(id: number): Promise<DeliveryPartnerApplication> {
-    try {
-      const res = await api.put<DeliveryPartnerApplication>(`/api/delivery-applications/admin/${id}/approve`)
-      const updated = res.data
-      const apps = getStoredApps()
-      const idx = apps.findIndex((a) => a.id === id)
-      if (idx !== -1) {
-        apps[idx] = { ...apps[idx], ...updated, status: 'APPROVED' }
-      } else {
-        apps.unshift(updated)
-      }
-      saveStoredApps(apps)
-
-      const user = getCurrentUser()
-      if (user && (user.id === updated.userId || user.email?.toLowerCase() === updated.userEmail?.toLowerCase())) {
-        if (!user.roles.includes('DELIVERY_PARTNER')) {
-          user.roles.push('DELIVERY_PARTNER')
-        }
-        user.role = 'DELIVERY_PARTNER'
-        localStorage.setItem(USER_KEY, JSON.stringify(user))
-        window.dispatchEvent(new CustomEvent('campusgo-user-updated', { detail: user }))
-        window.dispatchEvent(new Event('storage'))
-      }
-
-      window.dispatchEvent(new CustomEvent('campusgo-application-approved', { detail: updated }))
-      return updated
-    } catch {
+    // Handle mock/demo apps offline without breaking backend API call
+    if (id >= 900) {
       const apps = getStoredApps()
       const idx = apps.findIndex((a) => a.id === id)
       if (idx !== -1) {
@@ -229,24 +230,42 @@ export const deliveryApplicationService = {
           reviewedByName: 'Campus Admin',
         }
         saveStoredApps(apps)
-
-        // Upgrade current logged in user role in localStorage if matching or if applicant is current user
-        const user = getCurrentUser()
-        if (user && (user.id === apps[idx].userId || user.email.toLowerCase() === apps[idx].userEmail.toLowerCase())) {
-          if (!user.roles.includes('DELIVERY_PARTNER')) {
-            user.roles.push('DELIVERY_PARTNER')
-          }
-          user.role = 'DELIVERY_PARTNER'
-          localStorage.setItem(USER_KEY, JSON.stringify(user))
-          window.dispatchEvent(new CustomEvent('campusgo-user-updated', { detail: user }))
-          window.dispatchEvent(new Event('storage'))
-        }
-
+        window.dispatchEvent(new CustomEvent('campusgo-delivery-apps-updated'))
         window.dispatchEvent(new CustomEvent('campusgo-application-approved', { detail: apps[idx] }))
         return apps[idx]
       }
       throw new Error('Application not found')
     }
+
+    // Real backend application
+    const res = await api.put<DeliveryPartnerApplication>(`/api/delivery-applications/admin/${id}/approve`)
+    const updated = { ...res.data, status: 'APPROVED' as const }
+
+    // Update local cache
+    const apps = getStoredApps()
+    const idx = apps.findIndex((a) => a.id === id)
+    if (idx !== -1) {
+      apps[idx] = { ...apps[idx], ...updated }
+    } else {
+      apps.unshift(updated)
+    }
+    saveStoredApps(apps)
+
+    // If current logged-in user in this browser is the applicant, update their role immediately
+    const currentUser = getCurrentUser()
+    if (currentUser && (currentUser.id === updated.userId || currentUser.email?.toLowerCase() === updated.userEmail?.toLowerCase())) {
+      if (!currentUser.roles.includes('DELIVERY_PARTNER')) {
+        currentUser.roles.push('DELIVERY_PARTNER')
+      }
+      currentUser.role = 'DELIVERY_PARTNER'
+      localStorage.setItem(USER_KEY, JSON.stringify(currentUser))
+      window.dispatchEvent(new CustomEvent('campusgo-user-updated', { detail: currentUser }))
+      window.dispatchEvent(new Event('storage'))
+    }
+
+    window.dispatchEvent(new CustomEvent('campusgo-delivery-apps-updated'))
+    window.dispatchEvent(new CustomEvent('campusgo-application-approved', { detail: updated }))
+    return updated
   },
 
   async rejectApplication(id: number, reason: string): Promise<DeliveryPartnerApplication> {

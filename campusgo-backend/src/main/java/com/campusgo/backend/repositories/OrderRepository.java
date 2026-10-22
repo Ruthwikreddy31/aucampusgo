@@ -21,13 +21,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByOrderStatusInOrderByCreatedAtDesc(List<OrderStatus> statuses);
     List<Order> findByCreatedAtAfter(LocalDateTime dateTime);
     java.util.Optional<Order> findByOrderNumber(String orderNumber);
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select o from Order o where o.id = :id")
-    Optional<Order> findByIdForUpdate(Long id);
+    @Query(value = "SELECT * FROM orders WHERE id = :id FOR UPDATE", nativeQuery = true)
+    Optional<Order> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
     long countByDeliveryAgentUserIdAndOrderStatus(Long userId, OrderStatus status);
     long countByDeliveryAgentIdAndOrderStatus(Long agentId, OrderStatus status);
 
-    @Query("select o from Order o where o.biddingStatus = 'OPEN' order by o.createdAt desc")
+    @Query("select o from Order o where upper(o.biddingStatus) = 'OPEN' and o.orderStatus not in ('DELIVERED','CANCELLED','REJECTED') order by o.createdAt desc")
     List<Order> findAllOpenBiddingOrders();
 
     @Query("select o from Order o where o.selectedDeliveryPartnerId = :partnerId and o.orderStatus not in ('DELIVERED','CANCELLED','REJECTED') order by o.createdAt desc")

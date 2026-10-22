@@ -219,6 +219,9 @@ public class ManagerController {
         }
         if (newStatus == OrderStatus.READY_FOR_PICKUP) {
             order.setPreparationStatus("READY_FOR_PICKUP");
+            if (order.getDeliveryAgent() != null) {
+                order.setDeliveryStatus("READY_FOR_PICKUP");
+            }
         }
 
         String oldStatus = order.getOrderStatus().name();
@@ -234,9 +237,14 @@ public class ManagerController {
         }
 
         if (newStatus == OrderStatus.READY_FOR_PICKUP) {
-            biddingService.createDeliveryRequest(updated, updated.getDeadlineMinutes());
+            if (updated.getDeliveryAgent() != null && updated.getDeliveryAgent().getUser() != null) {
+                notificationService.notifyUser(updated.getDeliveryAgent().getUser().getId(), updated.getId(),
+                        "Order ready for pickup", "Order " + updated.getOrderNumber() + " is prepared and ready for pickup at the counter.", "ORDER_READY");
+            } else {
+                biddingService.createDeliveryRequest(updated, updated.getDeadlineMinutes());
+            }
             notificationService.notifyUser(updated.getUser().getId(), updated.getId(),
-                    "Order ready", "Order " + updated.getOrderNumber() + " is ready. Delivery bidding is now open.", "ORDER_READY");
+                    "Order ready", "Order " + updated.getOrderNumber() + " is prepared and ready for pickup.", "ORDER_READY");
         }
 
         return ResponseEntity.ok(updated);

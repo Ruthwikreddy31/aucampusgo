@@ -75,12 +75,16 @@ export default function BidSelectionModal({
     }
 
     window.addEventListener('campusgo-requests-updated', handleUpdate)
+    window.addEventListener('campusgo-new-bid', handleUpdate)
+    window.addEventListener('campusgo-order-updated', handleUpdate)
     window.addEventListener('storage', handleUpdate)
 
     return () => {
       isMounted = false
       clearInterval(interval)
       window.removeEventListener('campusgo-requests-updated', handleUpdate)
+      window.removeEventListener('campusgo-new-bid', handleUpdate)
+      window.removeEventListener('campusgo-order-updated', handleUpdate)
       window.removeEventListener('storage', handleUpdate)
     }
   }, [isOpen, orderId, deadlineMinutes])

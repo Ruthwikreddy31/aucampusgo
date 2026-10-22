@@ -183,6 +183,10 @@ export const biddingService = {
         estimatedPickupTimeMinutes: bidPayload.estimatedPickupMinutes || 2,
         estimatedDeliveryTimeMinutes: bidPayload.estimatedDeliveryMinutes || 5,
       })
+      // Dispatch events so customer-side pages (OrderTrackingPage, BidSelectionModal) refresh bids
+      window.dispatchEvent(new CustomEvent('campusgo-new-bid', { detail: { orderId, bid: data } }))
+      window.dispatchEvent(new CustomEvent('campusgo-requests-updated'))
+      window.dispatchEvent(new CustomEvent('campusgo-order-updated'))
       return data
     } catch {
       let requests = getStoredRequests()
@@ -253,17 +257,16 @@ export const biddingService = {
   async getTop5Bids(orderId: number): Promise<DeliveryBid[]> {
     try {
       const { data } = await api.get<DeliveryBid[]>(`/api/bidding/orders/${orderId}/top-bids`)
-      if (data && data.length > 0) {
-        return data
-      }
+      // Backend is the single source of truth — return whatever it gives us,
+      // even if it's an empty array (means no partner has bid yet)
+      return data || []
     } catch {
-      // Backend not reached or returned empty, proceed to fallback
+      // Network error / backend unreachable — try local fallback
+      console.warn('[biddingService] Backend unreachable for getTop5Bids, checking local storage')
     }
 
-    let request = await this.getDeliveryRequest(orderId)
-    if (!request || !request.bids || request.bids.length === 0) {
-      request = await this.createDeliveryRequest(orderId, 5)
-    }
+    // Local storage fallback (only when backend is completely offline)
+    const request = await this.getDeliveryRequest(orderId)
     if (!request || !request.bids || request.bids.length === 0) {
       return []
     }

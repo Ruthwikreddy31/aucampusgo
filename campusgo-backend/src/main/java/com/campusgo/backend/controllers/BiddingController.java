@@ -66,7 +66,15 @@ public class BiddingController {
     }
 
     @GetMapping({"/api/bidding/requests/open", "/api/delivery-requests/open"})
-    public ResponseEntity<List<DeliveryRequest>> getOpenDeliveryRequests() {
+    public ResponseEntity<?> getOpenDeliveryRequests(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails != null) {
+            User user = userRepository.findById(userDetails.getId()).orElse(null);
+            if (user != null && user.hasRole(Role.DELIVERY_PARTNER)) {
+                if (!biddingService.isEligiblePartner(user)) {
+                    return ResponseEntity.ok(List.of());
+                }
+            }
+        }
         return ResponseEntity.ok(requestRepository.findByStatusOrderByCreatedAtDesc("OPEN"));
     }
 
@@ -87,6 +95,9 @@ public class BiddingController {
         User partnerUser = userRepository.findById(userDetails.getId()).orElseThrow();
         if (!partnerUser.hasRole(Role.DELIVERY_PARTNER)) {
             return ResponseEntity.status(403).body(Map.of("message", "Only delivery partners can submit delivery bids"));
+        }
+        if (!biddingService.isEligiblePartner(partnerUser)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Only Admin-approved and ACTIVE delivery partners can participate in bidding."));
         }
 
         Long targetRequestId = requestId;

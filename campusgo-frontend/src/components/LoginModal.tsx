@@ -14,6 +14,7 @@ export default function LoginModal() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [devOtp, setDevOtp] = useState('')
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   const googleLoginHint = COLLEGE_EMAIL_REGEX.test(email.trim()) ? email.trim().toLowerCase() : undefined
@@ -34,9 +35,15 @@ export default function LoginModal() {
 
     setIsLoading(true)
     try {
-      await sendOtp(email)
+      const res = await sendOtp(email)
       setOtpSent(true)
-      toast.success(`OTP sent to ${email}!`)
+      if (res?.otp) {
+        setDevOtp(res.otp)
+        setOtp(res.otp)
+        toast.info(`OTP generated: ${res.otp}`, { duration: 8000 })
+      } else {
+        toast.success(`OTP sent to ${email}!`)
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       setError(msg || 'Failed to send OTP to college email.')
@@ -199,6 +206,13 @@ export default function LoginModal() {
             <div className="rounded-[16px] bg-[rgba(108,60,225,0.08)] p-3 text-xs font-semibold">
               OTP sent to <span className="font-bold">{email}</span>
             </div>
+
+            {devOtp && (
+              <div className="rounded-[16px] bg-amber-500/10 border border-amber-500/30 p-3 text-xs font-semibold text-amber-700 flex items-center justify-between">
+                <span>Verification Code:</span>
+                <span className="font-mono font-bold tracking-widest text-base text-[var(--color-primary)]">{devOtp}</span>
+              </div>
+            )}
 
             <label className="block">
               <span className="mb-1.5 block text-xs font-extrabold text-[var(--color-text)] uppercase tracking-wider">

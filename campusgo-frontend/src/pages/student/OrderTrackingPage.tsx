@@ -166,6 +166,7 @@ export default function OrderTrackingPage() {
 
     window.addEventListener('campusgo-order-updated', handleUpdate)
     window.addEventListener('campusgo-requests-updated', handleUpdate)
+    window.addEventListener('campusgo-new-bid', handleUpdate)
     window.addEventListener('storage', handleUpdate)
 
     // Fast polling (2.5s) while order is progressing
@@ -174,6 +175,7 @@ export default function OrderTrackingPage() {
     return () => {
       window.removeEventListener('campusgo-order-updated', handleUpdate)
       window.removeEventListener('campusgo-requests-updated', handleUpdate)
+      window.removeEventListener('campusgo-new-bid', handleUpdate)
       window.removeEventListener('storage', handleUpdate)
       clearInterval(t)
     }

@@ -46,6 +46,7 @@ import OrderTrackingPage from './pages/student/OrderTrackingPage'
 import OrdersPage from './pages/student/OrdersPage'
 import NotificationsPage from './pages/student/NotificationsPage'
 import ProfilePage from './pages/student/ProfilePage'
+import PrintPage from './pages/student/PrintPage'
 
 // Delivery pages
 import DeliveryLoginPage from './pages/delivery/DeliveryLoginPage'
@@ -137,6 +138,11 @@ function AppRoutes() {
       <Route path="/profile" element={
         <ProtectedRoute>
           <StudentLayout><ProfilePage /></StudentLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/print" element={
+        <ProtectedRoute>
+          <StudentLayout><PrintPage /></StudentLayout>
         </ProtectedRoute>
       } />
 

@@ -94,8 +94,31 @@ public class DeliveryApplicationService {
     }
 
     public Optional<DeliveryApplicationResponse> getMyStatus(Long userId) {
-        return applicationRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
-                .map(this::mapToResponse);
+        User user = userRepository.findById(userId).orElse(null);
+        Optional<DeliveryPartnerApplication> appOpt = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
+        if (appOpt.isPresent()) {
+            DeliveryPartnerApplication app = appOpt.get();
+            if (user != null && user.hasRole(Role.DELIVERY_PARTNER) && app.getStatus() != ApplicationStatus.APPROVED) {
+                app.setStatus(ApplicationStatus.APPROVED);
+                app.setReviewedAt(LocalDateTime.now());
+                app = applicationRepository.save(app);
+            }
+            return Optional.of(mapToResponse(app));
+        }
+        if (user != null && user.hasRole(Role.DELIVERY_PARTNER)) {
+            return Optional.of(DeliveryApplicationResponse.builder()
+                    .id(-1L)
+                    .userId(user.getId())
+                    .userName(user.getName())
+                    .userEmail(user.getEmail())
+                    .userPhone(user.getPhone())
+                    .applicantType(ApplicantType.STUDENT)
+                    .status(ApplicationStatus.APPROVED)
+                    .submittedAt(LocalDateTime.now())
+                    .reviewedAt(LocalDateTime.now())
+                    .build());
+        }
+        return Optional.empty();
     }
 
     public List<DeliveryApplicationResponse> getAllApplications(ApplicationStatus status) {
@@ -130,14 +153,12 @@ public class DeliveryApplicationService {
         applicant.addRole(Role.DELIVERY_PARTNER);
         userRepository.save(applicant);
 
-        // Ensure DeliveryAgent entry exists in delivery_agents table
-        if (deliveryAgentRepository.findByUserId(applicant.getId()).isEmpty()) {
-            DeliveryAgent agent = DeliveryAgent.builder()
-                    .user(applicant)
-                    .availabilityStatus("AVAILABLE")
-                    .build();
-            deliveryAgentRepository.save(agent);
-        }
+        // Ensure DeliveryAgent entry exists with ACTIVE status
+        DeliveryAgent agent = deliveryAgentRepository.findByUserId(applicant.getId())
+                .orElseGet(() -> DeliveryAgent.builder().user(applicant).build());
+        agent.setPartnerStatus("ACTIVE");
+        agent.setAvailabilityStatus("AVAILABLE");
+        deliveryAgentRepository.save(agent);
 
         log.info("Delivery partner application approved for user ID: {} by manager ID: {}", applicant.getId(), manager.getId());
         return mapToResponse(saved);
@@ -157,6 +178,19 @@ public class DeliveryApplicationService {
         app.setReviewedAt(LocalDateTime.now());
         app.setReviewedBy(manager);
         DeliveryPartnerApplication saved = applicationRepository.save(app);
+
+        // Deactivate partner status so rejected applicants cannot bid or deliver
+        User applicant = app.getUser();
+        if (applicant.hasRole(Role.DELIVERY_PARTNER)) {
+            applicant.removeRole(Role.DELIVERY_PARTNER);
+            userRepository.save(applicant);
+        }
+        deliveryAgentRepository.findByUserId(applicant.getId()).ifPresent(agentRecord -> {
+            agentRecord.setPartnerStatus("REJECTED");
+            agentRecord.setAvailabilityStatus("OFFLINE");
+            agentRecord.setSuspensionReason("Documents rejected: " + reason.trim());
+            deliveryAgentRepository.save(agentRecord);
+        });
 
         log.info("Delivery partner application rejected for user ID: {} by manager ID: {}", app.getUser().getId(), manager.getId());
         return mapToResponse(saved);

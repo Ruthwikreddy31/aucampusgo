@@ -44,6 +44,15 @@ public class Order extends BaseEntity {
     @Builder.Default
     private BigDecimal platformFee = new BigDecimal("5.00");
 
+    /** Printing cost for print-service orders. 0 for regular product orders. */
+    @Column(name = "printing_cost", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal printingCost = BigDecimal.ZERO;
+
+    /** Reference to the associated PrintJob, if this is a print-service order. */
+    @Column(name = "print_job_id")
+    private Long printJobId;
+
     private Integer deadlineMinutes;
 
     private java.time.LocalDateTime deadlineAt;
