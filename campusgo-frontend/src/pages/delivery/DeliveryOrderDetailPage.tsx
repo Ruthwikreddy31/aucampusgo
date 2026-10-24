@@ -282,7 +282,7 @@ export default function DeliveryOrderDetailPage() {
           <p className="font-extrabold text-base text-white">{pickupContact?.shopName || order.shop?.name || 'Campus Canteen & Food Court'}</p>
           <p className="text-xs text-slate-300 mt-1 flex items-start gap-1">
             <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
-            <span>{pickupContact?.pickupLocation || 'Ground Floor, Student Activity Center (SAC), Narsampet, Warangal'}</span>
+            <span>{pickupContact?.pickupLocation || 'Ground Floor, Student Activity Center (SAC), Anurag University, Hyderabad'}</span>
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800 text-xs">
             <span className="text-slate-400">Kitchen manager: <span className="font-bold text-white">{pickupContact?.managerName || 'Canteen Manager'}</span></span>

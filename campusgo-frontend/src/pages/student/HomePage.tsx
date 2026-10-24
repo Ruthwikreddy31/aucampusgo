@@ -115,7 +115,7 @@ export default function HomePage() {
         <div className="space-y-7">
           <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-extrabold text-[var(--color-primary)] shadow-[var(--shadow-soft)]">
             <span className="pulse-dot" />
-            Delivering only inside Maheshwaram, Narsampet, Warangal
+            Delivering only inside Anurag University, Hyderabad
           </div>
           <div className="space-y-5">
             <h1 className="max-w-3xl text-5xl font-extrabold text-[var(--color-text)] sm:text-6xl xl:text-7xl">

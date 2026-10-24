@@ -5,10 +5,10 @@ export const APP_NAME = 'CampusGo'
 export const APP_VERSION = '1.0.0'
 
 // ─── Campus Config ────────────────────────────────────────────────────────────
-export const CAMPUS_NAME = 'Maheshwaram, Narsampet, Warangal'
-// 17°55'16.3"N, 79°51'27.4"E (Maheshwaram, Narsampet, Warangal)
-export const CAMPUS_LATITUDE = Number(import.meta.env.VITE_CAMPUS_LATITUDE ?? 17.92119444)
-export const CAMPUS_LONGITUDE = Number(import.meta.env.VITE_CAMPUS_LONGITUDE ?? 79.85761111)
+export const CAMPUS_NAME = 'Anurag University, Hyderabad'
+// 17°25'09.5"N, 78°39'23.5"E (Anurag University, Hyderabad)
+export const CAMPUS_LATITUDE = Number(import.meta.env.VITE_CAMPUS_LATITUDE ?? 17.41931)
+export const CAMPUS_LONGITUDE = Number(import.meta.env.VITE_CAMPUS_LONGITUDE ?? 78.65654)
 export const CAMPUS_RADIUS_METERS = Number(import.meta.env.VITE_CAMPUS_RADIUS_METERS ?? 15000)
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

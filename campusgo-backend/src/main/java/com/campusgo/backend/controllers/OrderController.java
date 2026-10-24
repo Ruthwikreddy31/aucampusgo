@@ -46,16 +46,16 @@ public class OrderController {
     private final ReviewRepository reviewRepository;
     private final ApplicationContext applicationContext;
 
-    @Value("${app.campus.latitude:17.92119444}")
+    @Value("${app.campus.latitude:17.41931}")
     private double defaultCampusLat;
 
-    @Value("${app.campus.longitude:79.85761111}")
+    @Value("${app.campus.longitude:78.65654}")
     private double defaultCampusLng;
 
     @Value("${app.campus.radius-meters:15000.0}")
     private double defaultCampusRadiusMeters;
 
-    @Value("${app.campus.name:Maheshwaram, Narsampet, Warangal}")
+    @Value("${app.campus.name:Anurag University, Hyderabad}")
     private String defaultCampusName;
 
     private double getCampusLat() {
@@ -63,10 +63,8 @@ public class OrderController {
                 .map(s -> {
                     try {
                         double configuredLatitude = Double.parseDouble(s.getSettingValue().trim());
-                        // A deployed database can still contain the retired Uppal center.
-                        // Do not make customers appear 150 km away while the settings
-                        // migration is waiting for the next seeded startup.
-                        return Math.abs(configuredLatitude - 17.4018) < 0.00001
+                        // Ensure legacy coordinates default to Anurag University
+                        return (Math.abs(configuredLatitude - 17.4018) < 0.00001 || Math.abs(configuredLatitude - 17.92119444) < 0.00001)
                                 ? defaultCampusLat
                                 : configuredLatitude;
                     }
@@ -79,7 +77,7 @@ public class OrderController {
                 .map(s -> {
                     try {
                         double configuredLongitude = Double.parseDouble(s.getSettingValue().trim());
-                        return Math.abs(configuredLongitude - 78.5602) < 0.00001
+                        return (Math.abs(configuredLongitude - 78.5602) < 0.00001 || Math.abs(configuredLongitude - 79.85761111) < 0.00001)
                                 ? defaultCampusLng
                                 : configuredLongitude;
                     }

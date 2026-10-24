@@ -157,7 +157,7 @@ export default function ProductDetailsModal({
               <div className="space-y-4">
                 {[
                   [Truck, 'Fast campus delivery', 'Get items delivered to hostels, blocks and campus spaces in minutes.'],
-                  [ShieldCheck, 'Campus-only checkout', 'Every order stays inside Maheshwaram, Narsampet, Warangal.'],
+                  [ShieldCheck, 'Campus-only checkout', 'Every order stays inside Anurag University, Hyderabad.'],
                   [ShoppingCart, 'Student powered', 'CampusGo delivery partners are students earning in their free time.'],
                 ].map(([Icon, title, copy]) => (
                   <div key={title as string} className="flex gap-4">
@@ -198,7 +198,7 @@ export default function ProductDetailsModal({
                 {product.description || `${product.name} is a campus favorite for quick breaks, late study sessions and easy snacking between classes.`}
               </p>
               <p>
-                Order {product.name} online from CampusGo and get it delivered inside Maheshwaram, Narsampet, Warangal. Choose your hostel, academic block, library or canteen pickup point during checkout.
+                Order {product.name} online from CampusGo and get it delivered inside Anurag University, Hyderabad. Choose your hostel, academic block, library or canteen pickup point during checkout.
               </p>
               <h3 className="pt-2 text-2xl text-[var(--color-text)]">Features of {product.name}</h3>
               <p>

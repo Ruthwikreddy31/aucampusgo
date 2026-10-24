@@ -207,7 +207,7 @@ export default function DeliveryApplicationStatusPage() {
                   <Bike size={15} /> Zone
                 </div>
                 <p className="mt-1 text-base font-black text-emerald-950">Campus Only</p>
-                <p className="text-[11px] font-semibold text-emerald-700">Maheshwaram, Narsampet, Warangal</p>
+                <p className="text-[11px] font-semibold text-emerald-700">Anurag University, Hyderabad</p>
               </div>
 
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5">

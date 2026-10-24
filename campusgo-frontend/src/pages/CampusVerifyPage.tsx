@@ -34,7 +34,7 @@ export default function CampusVerifyPage() {
   const statusConfig = {
     idle:        { icon: MapPin,       color: 'text-[var(--color-text-muted)]', title: 'Checking location…',           msg: 'Please wait while we verify your campus location.' },
     checking:    { icon: Loader2,      color: 'text-[var(--color-primary-light)]', title: 'Verifying campus access…',  msg: 'Getting your location. This may take a moment.' },
-    outside:     { icon: AlertTriangle,color: 'text-[var(--color-warning)]',    title: 'Outside campus',               msg: `You are ${distance ? Math.round(distance) + 'm' : 'far'} from campus. CampusGo is only available within ${CAMPUS_RADIUS_METERS}m of Maheshwaram, Narsampet, Warangal.` },
+    outside:     { icon: AlertTriangle,color: 'text-[var(--color-warning)]',    title: 'Outside campus',               msg: `You are ${distance ? Math.round(distance) + 'm' : 'far'} from campus. CampusGo is only available within ${CAMPUS_RADIUS_METERS}m of Anurag University, Hyderabad.` },
     denied:      { icon: LocateOff,    color: 'text-[var(--color-danger)]',     title: 'Location access denied',       msg: 'Please allow location access in your browser settings and try again.' },
     unavailable: { icon: WifiOff,      color: 'text-[var(--color-danger)]',     title: 'Location unavailable',         msg: 'Unable to retrieve your location. Please check your GPS and try again.' },
     timeout:     { icon: RefreshCw,    color: 'text-[var(--color-warning)]',    title: 'Location timed out',           msg: 'Location request timed out. Please ensure GPS is enabled and try again.' },

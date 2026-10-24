@@ -208,7 +208,7 @@ export default function LoginPage() {
             </div>
 
             <p className="text-center text-xs text-[var(--color-text-subtle)]">
-              Maheshwaram, Narsampet, Warangal Campus • CampusGo System
+              Anurag University, Hyderabad • CampusGo System
             </p>
           </>
         ) : (

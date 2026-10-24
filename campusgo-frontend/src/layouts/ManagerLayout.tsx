@@ -107,7 +107,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
               <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> Canteen Terminal Active
             </span>
             <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-              Maheshwaram, Narsampet, Warangal Campus
+              Anurag University, Hyderabad
             </span>
           </div>
 

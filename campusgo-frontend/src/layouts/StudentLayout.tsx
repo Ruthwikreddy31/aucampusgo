@@ -106,7 +106,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
           <button className="hidden shrink-0 items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2.5 text-sm font-bold text-[var(--color-text)] md:flex">
             <MapPin size={17} className="text-[var(--color-primary)]" />
-            Maheshwaram, Narsampet, Warangal
+            Anurag University, Hyderabad
           </button>
 
           <nav className="hidden items-center gap-1 xl:flex">

@@ -69,7 +69,7 @@ export default function ManagerSettingsPage() {
         {/* About */}
         <div className="card p-4 space-y-1 text-center">
           <p className="font-black gradient-text-primary text-lg">CampusGo</p>
-          <p className="text-xs text-[var(--color-text-subtle)]">v1.0.0 • Maheshwaram, Narsampet, Warangal</p>
+          <p className="text-xs text-[var(--color-text-subtle)]">v1.0.0 • Anurag University, Hyderabad</p>
           <p className="text-xs text-[var(--color-text-subtle)]">React + Vite + Spring Boot + MySQL</p>
         </div>
 

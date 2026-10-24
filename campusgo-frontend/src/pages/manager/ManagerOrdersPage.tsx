@@ -28,7 +28,7 @@ import {
 export const CANTEEN_MANAGER_INFO = {
   name: 'Suresh Reddy (Canteen Manager)',
   canteenName: 'Central Campus Canteen & Food Court',
-  address: 'Ground Floor, Student Activity Center (Near Central Library & Main Block), Narsampet, Warangal',
+  address: 'Ground Floor, Student Activity Center (Near Central Library & Main Block), Anurag University, Hyderabad',
   phone: '+91 98490 11223',
   hours: '8:00 AM – 9:00 PM',
 }
@@ -36,7 +36,7 @@ export const CANTEEN_MANAGER_INFO = {
 export const READERS_MANAGER_INFO = {
   name: 'Readers Stationery & Print Manager',
   canteenName: 'Readers Stationery & Print Station',
-  address: 'Ground Floor, Readers Block / Library Arcade, Narsampet, Warangal',
+  address: 'Ground Floor, Readers Block / Library Arcade, Anurag University, Hyderabad',
   phone: '+91 98490 55667',
   hours: '8:30 AM – 7:30 PM',
 }

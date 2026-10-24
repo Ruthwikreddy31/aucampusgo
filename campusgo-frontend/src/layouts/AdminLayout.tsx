@@ -200,7 +200,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Platform Live
             </span>
             <span className="hidden sm:inline-block text-xs font-medium text-slate-400">
-              Maheshwaram, Narsampet, Warangal
+              Anurag University, Hyderabad
             </span>
           </div>
 

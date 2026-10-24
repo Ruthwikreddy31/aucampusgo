@@ -70,7 +70,7 @@ export default function AdminProfilePage() {
             </p>
             <p className="text-xs text-slate-500 flex items-center gap-1.5">
               <Building size={14} className="text-slate-600" />
-              Maheshwaram, Narsampet, Warangal — Central Administration
+              Anurag University, Hyderabad — Central Administration
             </p>
           </div>
         </div>

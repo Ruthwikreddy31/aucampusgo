@@ -77,7 +77,7 @@ app:
   delivery:
     earning-per-delivery: ${DELIVERY_EARNING_PER_DELIVERY:15.00}
   campus:
-    name: ${CAMPUS_NAME:Maheshwaram, Narsampet, Warangal}
-    latitude: ${CAMPUS_LATITUDE:17.92119444}
-    longitude: ${CAMPUS_LONGITUDE:79.85761111}
+    name: ${CAMPUS_NAME:Anurag University, Hyderabad}
+    latitude: ${CAMPUS_LATITUDE:17.41931}
+    longitude: ${CAMPUS_LONGITUDE:78.65654}
     radius-meters: ${CAMPUS_RADIUS_METERS:15000.0}

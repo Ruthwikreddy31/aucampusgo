@@ -1028,7 +1028,7 @@ export default function OrderTrackingPage() {
             </p>
             <p className="text-xs text-[var(--color-text-muted)] mt-1 flex items-start gap-1">
               <MapPin size={14} className="text-amber-500 shrink-0 mt-0.5" />
-              <span>Ground Floor, Student Activity Center (SAC), Narsampet, Warangal</span>
+              <span>Ground Floor, Student Activity Center (SAC), Anurag University, Hyderabad</span>
             </p>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 flex items-center gap-1">
               <span className="font-bold text-slate-700">Manager Contact:</span> +91 98490 11223 (Kitchen Counter)
@@ -1101,7 +1101,7 @@ export default function OrderTrackingPage() {
               </p>
             )}
             <p className="text-[11px] text-emerald-700 font-semibold pt-1 border-t border-[var(--color-border)]">
-              ✓ Verified delivery route within Maheshwaram, Narsampet, Warangal campus
+              ✓ Verified delivery route within Anurag University, Hyderabad campus
             </p>
           </div>
         </div>

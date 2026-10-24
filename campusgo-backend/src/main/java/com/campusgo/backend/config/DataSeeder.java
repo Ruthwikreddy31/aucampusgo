@@ -47,33 +47,36 @@ public class DataSeeder {
         private String demoAgentPassword;
 
 	/**
-	 * Moves only the known retired Uppal delivery center to the requested
-	 * Maheshwaram center. This runs independently of demo-data seeding so an
-	 * existing production database is corrected on its next backend restart.
+	/**
+	 * Moves any legacy delivery center to Anurag University, Hyderabad.
+	 * This runs independently of demo-data seeding so an existing production
+	 * database is corrected on its next backend restart.
 	 */
 	@Bean
 	public CommandLineRunner migrateRetiredCampusLocation() {
 		return args -> {
 			var latitude = campusSettingRepository.findBySettingKey("campus.latitude");
 			var longitude = campusSettingRepository.findBySettingKey("campus.longitude");
-			boolean usesRetiredCenter = latitude.map(s -> "17.4018".equals(s.getSettingValue())).orElse(false)
-					|| longitude.map(s -> "78.5602".equals(s.getSettingValue())).orElse(false);
+			var campusName = campusSettingRepository.findBySettingKey("campus_name");
+			boolean usesRetiredCenter = latitude.map(s -> "17.4018".equals(s.getSettingValue()) || "17.92119444".equals(s.getSettingValue())).orElse(false)
+					|| longitude.map(s -> "78.5602".equals(s.getSettingValue()) || "79.85761111".equals(s.getSettingValue())).orElse(false)
+					|| campusName.map(s -> s.getSettingValue() != null && !s.getSettingValue().contains("Anurag")).orElse(false);
 
 			if (!usesRetiredCenter) return;
 
 			latitude.ifPresent(s -> {
-				s.setSettingValue("17.92119444");
+				s.setSettingValue("17.41931");
 				campusSettingRepository.save(s);
 			});
 			longitude.ifPresent(s -> {
-				s.setSettingValue("79.85761111");
+				s.setSettingValue("78.65654");
 				campusSettingRepository.save(s);
 			});
-			campusSettingRepository.findBySettingKey("campus_name").ifPresent(s -> {
-				s.setSettingValue("Maheshwaram, Narsampet, Warangal");
+			campusName.ifPresent(s -> {
+				s.setSettingValue("Anurag University, Hyderabad");
 				campusSettingRepository.save(s);
 			});
-			log.info("Migrated CampusGo delivery center to Maheshwaram, Narsampet, Warangal");
+			log.info("Migrated CampusGo delivery center to Anurag University, Hyderabad");
 		};
 	}
 
@@ -543,14 +546,14 @@ public class DataSeeder {
                                                 .imageUrl("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=700&q=80")
                                                 .available(true).active(true).build());
 
-				// Seed initial campus settings or ensure Maheshwaram, Narsampet coordinates are configured
+				// Seed initial campus settings or ensure Anurag University, Hyderabad coordinates are configured
 				if (campusSettingRepository.count() == 0) {
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus_name").settingValue("Maheshwaram, Narsampet, Warangal").description("Official campus and delivery zone name").build());
+							.settingKey("campus_name").settingValue("Anurag University, Hyderabad").description("Official campus and delivery zone name").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus.latitude").settingValue("17.92119444").description("Center latitude (Maheshwaram, Narsampet, Warangal)").build());
+							.settingKey("campus.latitude").settingValue("17.41931").description("Center latitude (Anurag University, Hyderabad)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus.longitude").settingValue("79.85761111").description("Center longitude (Maheshwaram, Narsampet, Warangal)").build());
+							.settingKey("campus.longitude").settingValue("78.65654").description("Center longitude (Anurag University, Hyderabad)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
 							.settingKey("delivery.radius.meters").settingValue("15000").description("Campus delivery boundary in meters (covers up to Uppal)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
@@ -564,19 +567,19 @@ public class DataSeeder {
 				} else {
 					// Ensure campus latitude/longitude and updated radius exist if seeded previously without them
 					campusSettingRepository.findBySettingKey("campus_name").ifPresentOrElse(
-							s -> { s.setSettingValue("Maheshwaram, Narsampet, Warangal"); campusSettingRepository.save(s); },
+							s -> { s.setSettingValue("Anurag University, Hyderabad"); campusSettingRepository.save(s); },
 							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-								.settingKey("campus_name").settingValue("Maheshwaram, Narsampet, Warangal").description("Official campus and delivery zone name").build())
+								.settingKey("campus_name").settingValue("Anurag University, Hyderabad").description("Official campus and delivery zone name").build())
 					);
 					campusSettingRepository.findBySettingKey("campus.latitude").ifPresentOrElse(
-							s -> { s.setSettingValue("17.92119444"); campusSettingRepository.save(s); },
+							s -> { s.setSettingValue("17.41931"); campusSettingRepository.save(s); },
 							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-								.settingKey("campus.latitude").settingValue("17.92119444").description("Center latitude (Maheshwaram, Narsampet, Warangal)").build())
+								.settingKey("campus.latitude").settingValue("17.41931").description("Center latitude (Anurag University, Hyderabad)").build())
 					);
 					campusSettingRepository.findBySettingKey("campus.longitude").ifPresentOrElse(
-							s -> { s.setSettingValue("79.85761111"); campusSettingRepository.save(s); },
+							s -> { s.setSettingValue("78.65654"); campusSettingRepository.save(s); },
 							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-								.settingKey("campus.longitude").settingValue("79.85761111").description("Center longitude (Maheshwaram, Narsampet, Warangal)").build())
+								.settingKey("campus.longitude").settingValue("78.65654").description("Center longitude (Anurag University, Hyderabad)").build())
 					);
 					campusSettingRepository.findBySettingKey("delivery.radius.meters").ifPresentOrElse(
 							s -> { s.setSettingValue("15000"); campusSettingRepository.save(s); },

@@ -200,7 +200,7 @@ export default function CheckoutPage() {
           </div>
           <h2 className="text-xl font-bold text-[var(--color-text)]">Verifying campus location…</h2>
           <p className="text-sm text-[var(--color-text-muted)]">
-            Confirming that you are within the Maheshwaram, Narsampet, Warangal delivery area before proceeding.
+            Confirming that you are within the Anurag University, Hyderabad delivery area before proceeding.
           </p>
         </div>
       </div>
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
               </p>
               {distanceKm && (
                 <p className="text-xs text-[var(--color-text-subtle)] mt-2">
-                  Current location is approximately <span className="font-bold">{distanceKm} km</span> from the campus delivery zone (Maheshwaram, Narsampet, Warangal).
+                  Current location is approximately <span className="font-bold">{distanceKm} km</span> from the campus delivery zone (Anurag University, Hyderabad).
                   CampusGo delivers exclusively within campus grounds.
                 </p>
               )}
@@ -431,7 +431,7 @@ export default function CheckoutPage() {
         <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 mb-2">
           <MapPin size={16} className="text-emerald-500 flex-shrink-0" />
           <p className="text-xs font-bold text-emerald-600">
-            Campus Verified ✓ — You are within the Maheshwaram, Narsampet, Warangal delivery zone.
+            Campus Verified ✓ — You are within the Anurag University, Hyderabad delivery zone.
           </p>
         </div>
       </div>

@@ -358,7 +358,7 @@ export default function CartPage() {
                 📍 You're Outside Campus
               </h2>
               <p className="text-xs sm:text-sm text-red-800 font-medium leading-relaxed">
-                CampusGo orders can only be placed while you are inside the Maheshwaram, Narsampet, Warangal delivery area.
+                CampusGo orders can only be placed while you are inside the Anurag University, Hyderabad delivery area.
                 You are currently approximately <span className="font-bold">{Math.round(outsideCampusError.distanceMeters)}m</span> away.
               </p>
             </div>

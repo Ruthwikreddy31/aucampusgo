@@ -27,7 +27,7 @@ import {
 export const CANTEEN_STATION = {
   name: 'Suresh Reddy (Canteen Manager)',
   canteenName: 'Anurag Central Canteen & Food Court',
-  location: 'Ground Floor, Student Activity Center (SAC), Narsampet, Warangal',
+  location: 'Ground Floor, Student Activity Center (SAC), Anurag University, Hyderabad',
   phone: '+91 98490 11223',
   hours: '8:00 AM – 9:00 PM',
 }

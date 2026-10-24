@@ -74,7 +74,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings.campus_name || 'Maheshwaram, Narsampet, Warangal'}
+                value={settings.campus_name || 'Anurag University, Hyderabad'}
                 onChange={(e) => handleChange('campus_name', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings['campus.latitude'] || '17.92119444'}
+                value={settings['campus.latitude'] || '17.41931'}
                 onChange={(e) => handleChange('campus.latitude', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings['campus.longitude'] || '79.85761111'}
+                value={settings['campus.longitude'] || '78.65654'}
                 onChange={(e) => handleChange('campus.longitude', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
