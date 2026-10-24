@@ -21,7 +21,7 @@ function apiErrorMessage(err: any, fallback: string): string {
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     if (!COLLEGE_EMAIL_REGEX.test(credentials.email)) {
-      throw new Error('Access restricted. Please use a valid college email address (e.g. 23eg106c27@anurag.edu.in).')
+      throw new Error('Please enter a valid email address.')
     }
     try {
       const { data } = await api.post<AuthResponse>('/api/auth/login', credentials)
@@ -47,14 +47,14 @@ export const authService = {
   async sendOtp(email: string): Promise<{ success: boolean; message: string; otp?: string }> {
     const cleanEmail = email.trim().toLowerCase()
     if (!COLLEGE_EMAIL_REGEX.test(cleanEmail)) {
-      throw new Error('Access restricted. Please use a valid college email address (e.g. 23eg106c27@anurag.edu.in).')
+      throw new Error('Please enter a valid email address.')
     }
 
     try {
       const { data } = await api.post('/api/auth/send-otp', { email: cleanEmail })
       return data
     } catch (err: any) {
-      throw new Error(apiErrorMessage(err, 'Failed to send OTP to your college email. Please check the backend mail settings.'))
+      throw new Error(apiErrorMessage(err, 'Failed to send OTP to your email. Please try again.'))
     }
   },
 
@@ -62,7 +62,7 @@ export const authService = {
     const cleanEmail = email.trim().toLowerCase()
     const cleanOtp = otp.trim()
     if (!COLLEGE_EMAIL_REGEX.test(cleanEmail)) {
-      throw new Error('Access restricted. Please use a valid college email address.')
+      throw new Error('Please enter a valid email address.')
     }
 
     try {

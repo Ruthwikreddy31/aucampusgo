@@ -50,24 +50,23 @@ public class AuthController {
     @org.springframework.beans.factory.annotation.Value("${app.otp.expose-in-response:false}")
     private boolean exposeOtpInResponse;
 
-    // Pattern allowing college emails: @anurag.edu.in, @*.edu.in, @*.ac.in, @*.edu,
-    // or demo domain @campusgo.com
-    private static final Pattern COLLEGE_EMAIL_PATTERN = Pattern.compile(
-            "^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]*\\.(edu|ac\\.in|edu\\.in)|anurag\\.edu\\.in|campusgo\\.com)$",
+    // Pattern allowing standard valid emails (including college and public domains)
+    private static final Pattern VALID_EMAIL_PATTERN = Pattern.compile(
+            "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
             Pattern.CASE_INSENSITIVE);
 
-    private boolean isValidCollegeEmail(String email) {
+    private boolean isValidEmail(String email) {
         if (email == null)
             return false;
-        return COLLEGE_EMAIL_PATTERN.matcher(email.trim()).matches();
+        return VALID_EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        if (!isValidCollegeEmail(loginRequest.getEmail())) {
+        if (!isValidEmail(loginRequest.getEmail())) {
             Map<String, Object> err = new HashMap<>();
             err.put("message",
-                    "Access restricted. Please use a valid college email address (e.g. rollnumber@anurag.edu.in).");
+                    "Please enter a valid email address.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
         }
 
@@ -106,15 +105,15 @@ public class AuthController {
                 Map<String, Object> err = new HashMap<>();
                 err.put("message", "Your student account is not approved or has been deactivated. Please contact campus administration.");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
-            } else if (!user.hasRole(Role.STUDENT)) {
+            } else if (!user.hasRole(Role.STUDENT) && !user.hasRole(Role.DELIVERY_PARTNER)) {
                 Map<String, Object> err = new HashMap<>();
-                err.put("message", "Google customer login is only available for approved student accounts.");
+                err.put("message", "Google sign-in is not enabled for this account.");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
             } else if (googleProfileName != null && !googleProfileName.isBlank()
                     && !googleProfileName.trim().equals(user.getName())) {
                 user.setName(googleProfileName.trim());
                 user = userRepository.save(user);
-                log.info("Updated student profile name from verified Google account for roll number [{}]", rollNumber);
+                log.info("Updated profile name from verified Google account for [{}]", email);
             }
 
             UserDetailsImpl userDetails = UserDetailsImpl.build(user);
@@ -146,9 +145,9 @@ public class AuthController {
     public ResponseEntity<?> sendOtp(@Valid @RequestBody OtpRequest request) {
         String email = request.getEmail().trim().toLowerCase();
 
-        if (!isValidCollegeEmail(email)) {
+        if (!isValidEmail(email)) {
             Map<String, Object> err = new HashMap<>();
-            err.put("message", "Please enter a valid college email address (e.g. 23eg106c27@anurag.edu.in).");
+            err.put("message", "Please enter a valid email address.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
         }
 
@@ -156,17 +155,17 @@ public class AuthController {
         if (user == null) {
             String rollNumber = email.contains("@") ? email.substring(0, email.indexOf("@")) : email;
             user = User.builder()
-                    .name("Student (" + rollNumber.toUpperCase() + ")")
+                    .name("User (" + rollNumber + ")")
                     .email(email)
                     .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                     .roles(new HashSet<>(Set.of(Role.STUDENT)))
                     .active(true)
                     .build();
             user = userRepository.save(user);
-            log.info("Auto-registered new student account for college email [{}]", email);
+            log.info("Auto-registered new user account for email [{}]", email);
         } else if (!user.isActive()) {
             Map<String, Object> err = new HashMap<>();
-            err.put("message", "Your student account has been deactivated. Please contact campus administration.");
+            err.put("message", "Your account has been deactivated. Please contact administration.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
         }
 
@@ -182,9 +181,13 @@ public class AuthController {
         } else if (exposeOtpInResponse) {
             response.put("message", "Email delivery unavailable. Use the OTP code shown below.");
             response.put("otp", otp);
+            if (emailService.getLastError() != null) {
+                response.put("emailError", emailService.getLastError());
+            }
         } else {
             Map<String, Object> err = new HashMap<>();
-            err.put("message", "Could not send OTP email. Check MAIL_USERNAME and MAIL_PASSWORD in backend .env. Gmail must use a 16-character app password without spaces.");
+            String detail = emailService.getLastError() != null ? " Reason: " + emailService.getLastError() : "";
+            err.put("message", "Could not send OTP email." + detail);
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(err);
         }
 
@@ -196,9 +199,9 @@ public class AuthController {
         String email = request.getEmail().trim().toLowerCase();
         String otp = request.getOtp().trim();
 
-        if (!isValidCollegeEmail(email)) {
+        if (!isValidEmail(email)) {
             Map<String, Object> err = new HashMap<>();
-            err.put("message", "Please enter a valid college email address.");
+            err.put("message", "Please enter a valid email address.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
         }
 

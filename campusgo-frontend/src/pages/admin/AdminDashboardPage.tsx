@@ -17,7 +17,6 @@ import {
   Eye,
   Check,
   RefreshCw,
-  Plus,
 } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import { deliveryApplicationService } from '../../services/deliveryApplicationService'
@@ -195,7 +194,7 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-2xl font-black text-white sm:text-3xl">Admin Command Center</h1>
           <p className="text-xs font-medium text-slate-400 mt-1">
-            Real-time telemetry and operational controls across Anurag University campus.
+            Real-time telemetry and operational controls across Maheshwaram, Narsampet, Warangal campus.
           </p>
         </div>
         <Link

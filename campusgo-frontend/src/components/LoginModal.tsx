@@ -14,14 +14,13 @@ export default function LoginModal() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [devOtp, setDevOtp] = useState('')
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   const googleLoginHint = COLLEGE_EMAIL_REGEX.test(email.trim()) ? email.trim().toLowerCase() : undefined
 
   const validateEmail = (val: string) => {
     if (!COLLEGE_EMAIL_REGEX.test(val)) {
-      setError('Please use a valid college email, like 23eg106c27@anurag.edu.in')
+      setError('Please enter a valid email address (e.g. name@example.com)')
       return false
     }
     setError('')
@@ -35,18 +34,12 @@ export default function LoginModal() {
 
     setIsLoading(true)
     try {
-      const res = await sendOtp(email)
+      await sendOtp(email)
       setOtpSent(true)
-      if (res?.otp) {
-        setDevOtp(res.otp)
-        setOtp(res.otp)
-        toast.info(`OTP generated: ${res.otp}`, { duration: 8000 })
-      } else {
-        toast.success(`OTP sent to ${email}!`)
-      }
+      toast.success(`OTP sent to ${email}! Please check your email inbox.`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg || 'Failed to send OTP to college email.')
+      setError(msg || 'Failed to send OTP to email.')
     } finally {
       setIsLoading(false)
     }
@@ -175,7 +168,7 @@ export default function LoginModal() {
           <form onSubmit={handleSendOtp} className="space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-xs font-extrabold text-[var(--color-text)] uppercase tracking-wider">
-                College email
+                Email address
               </span>
               <div className="relative">
                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -184,7 +177,7 @@ export default function LoginModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field pl-12"
-                  placeholder="23eg106c27@anurag.edu.in"
+                  placeholder="name@example.com"
                   required
                 />
               </div>
@@ -195,7 +188,7 @@ export default function LoginModal() {
                 <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
               ) : (
                 <>
-                  Send OTP to College Mail
+                  Send OTP
                   <ArrowRight size={18} />
                 </>
               )}
@@ -207,12 +200,6 @@ export default function LoginModal() {
               OTP sent to <span className="font-bold">{email}</span>
             </div>
 
-            {devOtp && (
-              <div className="rounded-[16px] bg-amber-500/10 border border-amber-500/30 p-3 text-xs font-semibold text-amber-700 flex items-center justify-between">
-                <span>Verification Code:</span>
-                <span className="font-mono font-bold tracking-widest text-base text-[var(--color-primary)]">{devOtp}</span>
-              </div>
-            )}
 
             <label className="block">
               <span className="mb-1.5 block text-xs font-extrabold text-[var(--color-text)] uppercase tracking-wider">

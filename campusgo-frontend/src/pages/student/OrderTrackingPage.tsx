@@ -6,7 +6,7 @@ import { reviewService } from '../../services/reviewService'
 import type { Order, DeliveryBid, Review } from '../../models'
 import OrderStatusBadge from '../../components/OrderStatusBadge'
 import LoadingSpinner from '../../components/LoadingSpinner'
-import { ORDER_STATUS_STEPS, ORDER_STATUS_LABEL } from '../../utils/constants'
+import { ORDER_STATUS_STEPS, ORDER_STATUS_LABEL, API_BASE_URL } from '../../utils/constants'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import {
@@ -52,8 +52,15 @@ export default function OrderTrackingPage() {
   })
 
   // Real-time deadline countdown calculation (ZestModel)
+  // Timer stops once a delivery partner is assigned (customer selected a partner)
   useEffect(() => {
     if (!order) return
+
+    // If a delivery partner has been assigned, stop the timer
+    if (order.deliveryAgent || order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED') {
+      setTimeLeft({ mins: 0, secs: 0, isExpired: false })
+      return
+    }
 
     const deadlineMinutes = order.deadlineMinutes || 5
     const createdTime = order.createdAt ? new Date(order.createdAt).getTime() : Date.now()
@@ -200,8 +207,12 @@ export default function OrderTrackingPage() {
     )
   }
 
-  const currentIdx = ORDER_STATUS_STEPS.indexOf(order.orderStatus as typeof ORDER_STATUS_STEPS[number])
+  // Compute timeline step index — DELIVERED (index 7) is the last step and should mark everything done
+  const rawIdx = ORDER_STATUS_STEPS.indexOf(order.orderStatus as typeof ORDER_STATUS_STEPS[number])
+  // If status is COMPLETED (not in the steps array), treat it the same as DELIVERED
+  const currentIdx = order.orderStatus === 'COMPLETED' ? ORDER_STATUS_STEPS.length - 1 : rawIdx
   const orderDisplayId = order.orderNumber || `CG-${order.id}`
+  const biddingExpired = Boolean(order.biddingDeadline && new Date(order.biddingDeadline).getTime() <= Date.now())
 
   return (
     <div className="page-enter max-w-2xl mx-auto pb-24 space-y-6">
@@ -320,7 +331,7 @@ export default function OrderTrackingPage() {
       </div>
 
       {/* ZestModel Delivery Deadline Countdown Banner */}
-      {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && (
+      {order.orderStatus !== 'DELIVERED' && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'COMPLETED' && (
         <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/40 text-left flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black">
@@ -336,7 +347,9 @@ export default function OrderTrackingPage() {
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                {timeLeft.isExpired
+                {order.deliveryAgent
+                  ? '✅ Partner assigned — delivery in progress'
+                  : timeLeft.isExpired
                   ? 'Target deadline reached • Courier finalizing delivery'
                   : 'Targeted arrival within student selected deadline'}
               </p>
@@ -345,13 +358,17 @@ export default function OrderTrackingPage() {
 
           <div className="text-right shrink-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase block">Time Remaining</span>
-            <span className={`font-mono text-xl font-black ${timeLeft.isExpired ? 'text-amber-400' : 'text-emerald-400'}`}>
-              {timeLeft.isExpired
-                ? 'Arriving Soon'
-                : `${timeLeft.mins < 10 ? `0${timeLeft.mins}` : timeLeft.mins}:${
-                    timeLeft.secs < 10 ? `0${timeLeft.secs}` : timeLeft.secs
-                  }`}
-            </span>
+            {order.deliveryAgent ? (
+              <span className="font-mono text-base font-black text-emerald-400">✓ Partner Assigned</span>
+            ) : (
+              <span className={`font-mono text-xl font-black ${timeLeft.isExpired ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {timeLeft.isExpired
+                  ? 'Arriving Soon'
+                  : `${timeLeft.mins < 10 ? `0${timeLeft.mins}` : timeLeft.mins}:${
+                      timeLeft.secs < 10 ? `0${timeLeft.secs}` : timeLeft.secs
+                    }`}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -406,7 +423,9 @@ export default function OrderTrackingPage() {
               <Zap size={26} className="text-amber-400 mx-auto animate-bounce" />
               <p className="text-sm font-bold text-white">Bidding Broadcast Sent to Campus Couriers</p>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Verified delivery partners at Anurag University have been notified. Incoming bids will appear automatically!
+                {biddingExpired || order.biddingStatus === 'CLOSED'
+                  ? 'The bidding window closed without a delivery bid. Please contact the canteen manager for help with this order.'
+                  : 'Your delivery request is open to approved, active campus partners. Incoming bids will appear automatically.'}
               </p>
             </div>
           ) : (
@@ -553,16 +572,31 @@ export default function OrderTrackingPage() {
       {/* Delivery Proof Card (if delivered and proof uploaded) */}
       {order.deliveryProofPath && (
         <div className="rounded-[24px] border border-emerald-500/30 bg-emerald-50/50 p-5 shadow-sm space-y-3">
-          <div className="flex items-center gap-2 text-emerald-800">
-            <Camera size={18} className="text-emerald-600" />
-            <h3 className="text-sm font-black">Delivery Proof Photo Attached</h3>
+          <div className="flex items-center justify-between text-emerald-800">
+            <div className="flex items-center gap-2">
+              <Camera size={18} className="text-emerald-600" />
+              <h3 className="text-sm font-black">Delivered Items Photo Attached</h3>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+              Photo Verified
+            </span>
           </div>
           <p className="text-xs text-emerald-700 font-semibold">
-            Uploaded by courier upon handover at {order.deliveryLocation}.
+            Taken by delivery courier upon handover at {order.deliveryLocation || 'your delivery spot'}.
           </p>
-          <div className="rounded-2xl bg-white p-2 border border-emerald-200 inline-block">
-            <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-emerald-500" /> Proof File: {order.deliveryProofPath}
+
+          <div className="rounded-2xl bg-white p-3 border border-emerald-200 space-y-2">
+            <img
+              src={`${API_BASE_URL}/api/delivery/proof/${order.deliveryProofPath}`}
+              alt="Delivered Items"
+              className="max-h-64 w-full rounded-xl object-contain bg-slate-900 shadow-sm"
+              onError={(e) => {
+                // If direct download endpoint isn't image or placeholder
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+            <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5 pt-1">
+              <ShieldCheck size={14} className="text-emerald-500" /> Proof Photo: {order.deliveryProofPath}
             </span>
           </div>
         </div>
@@ -761,8 +795,11 @@ export default function OrderTrackingPage() {
 
           <div className="space-y-0">
             {ORDER_STATUS_STEPS.map((step, idx) => {
-              const isDone = idx < currentIdx
-              const isCurrent = idx === currentIdx
+              // For DELIVERED (last step), mark it as done rather than "in progress"
+              const isLastStep = idx === ORDER_STATUS_STEPS.length - 1
+              const isDelivered = (order.orderStatus === 'DELIVERED' || order.orderStatus === 'COMPLETED') && isLastStep
+              const isDone = idx < currentIdx || isDelivered
+              const isCurrent = idx === currentIdx && !isDelivered
 
               return (
                 <div key={step} className="flex items-start gap-3.5 pb-6 last:pb-0 relative">
@@ -798,7 +835,9 @@ export default function OrderTrackingPage() {
                   <div className="pt-0.5">
                     <p
                       className={`text-sm font-extrabold ${
-                        isCurrent
+                        isDelivered
+                          ? 'text-emerald-600'
+                          : isCurrent
                           ? 'text-[var(--color-primary)]'
                           : isDone
                           ? 'text-[var(--color-text)]'
@@ -807,6 +846,11 @@ export default function OrderTrackingPage() {
                     >
                       {ORDER_STATUS_LABEL[step]}
                     </p>
+                    {isDelivered && (
+                      <p className="text-[11px] font-bold text-emerald-600 mt-0.5">
+                        ✓ Order delivered successfully
+                      </p>
+                    )}
                     {isCurrent && (
                       <p className="text-[11px] font-semibold text-[var(--color-text-muted)] mt-0.5">
                         Current stage — in progress
@@ -984,7 +1028,7 @@ export default function OrderTrackingPage() {
             </p>
             <p className="text-xs text-[var(--color-text-muted)] mt-1 flex items-start gap-1">
               <MapPin size={14} className="text-amber-500 shrink-0 mt-0.5" />
-              <span>Ground Floor, Student Activity Center (SAC), Anurag University, Hyderabad</span>
+              <span>Ground Floor, Student Activity Center (SAC), Narsampet, Warangal</span>
             </p>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5 flex items-center gap-1">
               <span className="font-bold text-slate-700">Manager Contact:</span> +91 98490 11223 (Kitchen Counter)
@@ -1057,7 +1101,7 @@ export default function OrderTrackingPage() {
               </p>
             )}
             <p className="text-[11px] text-emerald-700 font-semibold pt-1 border-t border-[var(--color-border)]">
-              ✓ Verified delivery route within Anurag University campus
+              ✓ Verified delivery route within Maheshwaram, Narsampet, Warangal campus
             </p>
           </div>
         </div>

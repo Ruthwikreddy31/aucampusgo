@@ -22,7 +22,7 @@ public class DeliveryAgent extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private String partnerStatus = "ACTIVE"; // ACTIVE, SUSPENDED, INACTIVE
+    private String partnerStatus = "INACTIVE"; // ACTIVE only while today's pass is paid
 
     private String suspensionReason;
 }

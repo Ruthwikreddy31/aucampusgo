@@ -181,7 +181,7 @@ export default function ProfilePage() {
         {/* App info */}
         <div className="card p-4 text-center space-y-1">
           <p className="text-sm font-bold gradient-text-primary">CampusGo</p>
-          <p className="text-xs text-[var(--color-text-subtle)]">v1.0.0 • Anurag University</p>
+          <p className="text-xs text-[var(--color-text-subtle)]">v1.0.0 • Maheshwaram, Narsampet, Warangal</p>
           <p className="text-xs text-[var(--color-text-subtle)]">Campus-exclusive ordering platform</p>
         </div>
 

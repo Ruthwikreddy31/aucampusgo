@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,12 +18,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ZestBiddingService {
 
+    /** MySQL stores local date-times, so bidding timestamps must use the campus zone. */
+    private static final ZoneId CAMPUS_ZONE = ZoneId.of("Asia/Kolkata");
+
     private final DeliveryRequestRepository requestRepository;
     private final DeliveryBidRepository bidRepository;
     private final DeliveryAssignmentRepository assignmentRepository;
     private final OrderRepository orderRepository;
     private final DeliveryAgentRepository agentRepository;
     private final DeliveryApplicationRepository applicationRepository;
+    private final UserRepository userRepository;
     private final DeliveryPartnerDailyFeeRepository dailyFeeRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final OrderStatusHistoryRepository statusHistoryRepository;
@@ -94,7 +99,7 @@ public class ZestBiddingService {
      * - Approved delivery partner application
      * - Account status = ACTIVE
      * - Availability status = AVAILABLE
-     * - Paid daily fee (₹10/day) for current date (or waived)
+     * - Paid daily fee (₹10/day) for the current campus date
      * - Inside/near campus geofence
      * - Active delivery count < limit (e.g. 2)
      */
@@ -114,36 +119,37 @@ public class ZestBiddingService {
                     DeliveryAgent newAgent = DeliveryAgent.builder()
                             .user(user)
                             .availabilityStatus("AVAILABLE")
-                            .partnerStatus("ACTIVE")
+                            .partnerStatus("INACTIVE")
                             .build();
                     return agentRepository.save(newAgent);
                 });
 
         if (agent.getPartnerStatus() == null) {
-            agent.setPartnerStatus("ACTIVE");
-            agent = agentRepository.save(agent);
+            agent.setPartnerStatus("INACTIVE");
         }
         if (agent.getAvailabilityStatus() == null) {
             agent.setAvailabilityStatus("AVAILABLE");
-            agent = agentRepository.save(agent);
         }
 
-        if (!"ACTIVE".equalsIgnoreCase(agent.getPartnerStatus()) || "OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())) {
+        if ("SUSPENDED".equalsIgnoreCase(agent.getPartnerStatus())
+                || "OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())) {
             return false;
         }
 
-        // Daily Fee check
-        LocalDate today = LocalDate.now();
+        // A paid record for today's campus date is the only way to activate bidding.
+        LocalDate today = LocalDate.now(CAMPUS_ZONE);
         Optional<DeliveryPartnerDailyFee> feeOpt = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(user.getId(), today);
         boolean feePaid = feeOpt.isPresent() && "PAID".equalsIgnoreCase(feeOpt.get().getStatus());
         if (!feePaid) {
-            // Check if daily fee is waived in settings
-            boolean waived = settingRepository.findBySettingKey("zest.waive_daily_fee")
-                    .map(s -> "true".equalsIgnoreCase(s.getSettingValue().trim()))
-                    .orElse(true);
-            if (!waived) {
-                return false;
+            if (!"INACTIVE".equalsIgnoreCase(agent.getPartnerStatus())) {
+                agent.setPartnerStatus("INACTIVE");
+                agentRepository.save(agent);
             }
+            return false;
+        }
+        if (!"ACTIVE".equalsIgnoreCase(agent.getPartnerStatus())) {
+            agent.setPartnerStatus("ACTIVE");
+            agentRepository.save(agent);
         }
 
         // Active delivery count check (< configured limit)
@@ -202,7 +208,7 @@ public class ZestBiddingService {
             deadlineMinutes = 5;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         LocalDateTime deadlineAt = order.getDeadlineAt() != null ? order.getDeadlineAt() : now.plusMinutes(deadlineMinutes);
         int windowSeconds = getBiddingWindowSeconds();
         if (deadlineAt.isAfter(now)) {
@@ -257,13 +263,12 @@ public class ZestBiddingService {
                 "Delivery bidding opened",
                 "Delivery partners can now bid for order " + order.getOrderNumber() + ".",
                 "BIDDING_OPENED");
-        // Find only Delivery Partners whose status is ACTIVE and eligible to receive delivery requests
-        List<DeliveryAgent> allAgents = agentRepository.findAll();
-        for (DeliveryAgent agent : allAgents) {
-            if (agent.getUser() != null
-                    && !"OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())
-                    && isEligiblePartner(agent.getUser())) {
-                notificationService.notifyUser(agent.getUser().getId(), order.getId(),
+        // Start from approved delivery-partner accounts, not from delivery_agents.
+        // A newly approved partner may not yet have an agent row; isEligiblePartner
+        // creates it and verifies ACTIVE / availability / fee requirements.
+        for (User partner : userRepository.findByRole(Role.DELIVERY_PARTNER)) {
+            if (isEligiblePartner(partner)) {
+                notificationService.notifyUser(partner.getId(), order.getId(),
                         "New delivery opportunity",
                         "Order " + order.getOrderNumber() + " is open for bidding. Submit your delivery fee bid.",
                         "DELIVERY_OPPORTUNITY");
@@ -289,8 +294,24 @@ public class ZestBiddingService {
         DeliveryRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Delivery request not found"));
 
+        Order order = orderRepository.findById(request.getOrderId()).orElse(null);
+        if (order != null && order.getDeliveryAgent() != null) {
+            throw new IllegalStateException("Order has already been assigned to a delivery partner.");
+        }
+        if (order != null && (order.getOrderStatus() == OrderStatus.DELIVERED || order.getOrderStatus() == OrderStatus.CANCELLED || order.getOrderStatus() == OrderStatus.REJECTED)) {
+            throw new IllegalStateException("This order is no longer available.");
+        }
+
+        // If request was closed/expired but order is still unassigned and active, reopen it
         if (!"OPEN".equalsIgnoreCase(request.getStatus())) {
-            throw new IllegalStateException("The bidding deadline has expired. No new bids can be submitted.");
+            request.setStatus("OPEN");
+            request.setBidEndAt(LocalDateTime.now(CAMPUS_ZONE).plusMinutes(5));
+            requestRepository.save(request);
+            if (order != null) {
+                order.setBiddingStatus("OPEN");
+                order.setBiddingDeadline(request.getBidEndAt());
+                orderRepository.save(order);
+            }
         }
 
         double minBid = getMinBidFee();
@@ -299,14 +320,7 @@ public class ZestBiddingService {
             throw new IllegalArgumentException("Bid amount must be between ₹" + (int)minBid + " and ₹" + (int)maxBid);
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
-        // Check if bidding window has expired
-        if (request.getBidEndAt() != null && now.isAfter(request.getBidEndAt())) {
-            request.setStatus("CLOSED");
-            requestRepository.save(request);
-            throw new IllegalStateException("The bidding deadline has expired. No new bids can be submitted.");
-        }
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
 
         if (estPickup == null || estPickup < 1) estPickup = 2;
         if (estDelivery == null || estDelivery < 1) estDelivery = Math.max(2, estPickup + 2);
@@ -351,15 +365,23 @@ public class ZestBiddingService {
     public List<DeliveryBid> getTop5LowestBids(Long requestId) {
         DeliveryRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Delivery request not found"));
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         List<DeliveryBid> topBids = calculateValidTopBids(request, now);
 
         if (request.getBidEndAt() != null && !now.isBefore(request.getBidEndAt())
                 && "OPEN".equalsIgnoreCase(request.getStatus())) {
-            request.setStatus(topBids.isEmpty() ? "BIDDING_CLOSED" : "SELECTION_PENDING");
-            requestRepository.save(request);
-            eventPublisher.publishBiddingClosed(requestId, topBids);
-            eventPublisher.publishTopBidsReady(requestId, topBids);
+            // Only transition to SELECTION_PENDING if bids actually exist.
+            // Do not permanently close bidding when zero bids have arrived yet.
+            if (!topBids.isEmpty()) {
+                request.setStatus("SELECTION_PENDING");
+                requestRepository.save(request);
+                orderRepository.findById(request.getOrderId()).ifPresent(ord -> {
+                    ord.setBiddingStatus("SELECTION_PENDING");
+                    orderRepository.save(ord);
+                });
+                eventPublisher.publishBiddingClosed(requestId, topBids);
+                eventPublisher.publishTopBidsReady(requestId, topBids);
+            }
         }
 
         return topBids;
@@ -384,7 +406,7 @@ public class ZestBiddingService {
             throw new IllegalArgumentException("Bid does not belong to this delivery request");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         if (!"OPEN".equalsIgnoreCase(request.getStatus()) && !"SELECTION_PENDING".equalsIgnoreCase(request.getStatus())) {
             throw new IllegalStateException("Delivery request is not available for partner selection");
         }
@@ -448,6 +470,18 @@ public class ZestBiddingService {
                 "You have been selected for Order #" + request.getOrderId() + ". Please confirm your assignment.",
                 "ASSIGNED");
 
+        orderRepository.findById(request.getOrderId()).ifPresent(order -> {
+            String message = selectedBid.getDeliveryPartnerName() + " was selected by the customer (bid ₹"
+                    + selectedBid.getAmount().intValue() + "). Awaiting courier confirmation.";
+            if (order.getShop() != null && order.getShop().getManagerUserId() != null) {
+                notificationService.notifyUser(order.getShop().getManagerUserId(), order.getId(),
+                        "Delivery partner selected", message, "DELIVERY_ASSIGNED");
+            } else {
+                notificationService.notifyRole(Role.MANAGER, order.getId(),
+                        "Delivery partner selected", message, "DELIVERY_ASSIGNED");
+            }
+        });
+
         return savedAssignment;
     }
 
@@ -467,7 +501,7 @@ public class ZestBiddingService {
             throw new IllegalStateException("Assignment is no longer pending confirmation (status: " + assignment.getStatus() + ")");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         if (assignment.getExpiresAt() != null && now.isAfter(assignment.getExpiresAt().plusSeconds(2))) {
             assignment.setStatus("EXPIRED");
             assignmentRepository.save(assignment);
@@ -528,6 +562,15 @@ public class ZestBiddingService {
                 "Delivery partner accepted",
                 partnerUser.getName() + " accepted your delivery request.",
                 "DELIVERY_ACCEPTED");
+        String managerMessage = partnerUser.getName() + " confirmed the delivery assignment. Contact: "
+                + (partnerUser.getPhone() != null ? partnerUser.getPhone() : "available in order details") + ".";
+        if (order.getShop() != null && order.getShop().getManagerUserId() != null) {
+            notificationService.notifyUser(order.getShop().getManagerUserId(), order.getId(),
+                    "Courier assignment confirmed", managerMessage, "DELIVERY_ACCEPTED");
+        } else {
+            notificationService.notifyRole(Role.MANAGER, order.getId(),
+                    "Courier assignment confirmed", managerMessage, "DELIVERY_ACCEPTED");
+        }
         return updatedOrder;
     }
 

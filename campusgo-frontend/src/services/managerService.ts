@@ -56,19 +56,8 @@ export const managerService = {
   },
 
   async getOrders(): Promise<Order[]> {
-    try {
-      const { data } = await api.get<Order[]>('/api/manager/orders')
-      const local = await orderService.getMyOrders()
-      const merged = [...data]
-      for (const loc of local) {
-        if (!merged.some(m => m.id === loc.id)) {
-          merged.push(loc)
-        }
-      }
-      return merged
-    } catch {
-      return orderService.getMyOrders()
-    }
+    const { data } = await api.get<Order[]>('/api/manager/orders')
+    return Array.isArray(data) ? data : []
   },
 
   async getAnalytics(): Promise<Analytics> {

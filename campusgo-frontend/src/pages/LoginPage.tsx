@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useGoogleLogin, type TokenResponse } from '@react-oauth/google'
 import { COLLEGE_EMAIL_REGEX } from '../utils/constants'
-import { Mail, Loader2, KeyRound, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { Mail, Loader2, KeyRound, ArrowRight, RefreshCw, CheckCircle2, Bike, ShieldCheck, ChefHat } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate, Link } from 'react-router-dom'
 
@@ -14,11 +14,11 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [error, setError] = useState('')
-  const [devOtp, setDevOtp] = useState('')
+  const [showStudent, setShowStudent] = useState(false)
 
   const validateEmail = (val: string) => {
     if (!COLLEGE_EMAIL_REGEX.test(val)) {
-      setError('Must be a valid college email (e.g. 23eg106c27@anurag.edu.in)')
+      setError('Please enter a valid email address (e.g. name@example.com)')
       return false
     }
     setError('')
@@ -31,18 +31,12 @@ export default function LoginPage() {
     if (!validateEmail(email)) return
 
     try {
-      const res = await sendOtp(email)
+      await sendOtp(email)
       setOtpSent(true)
-      if (res?.otp) {
-        setDevOtp(res.otp)
-        setOtp(res.otp)
-        toast.info(`OTP generated: ${res.otp}`, { duration: 8000 })
-      } else {
-        toast.success(`OTP sent successfully to ${email}!`)
-      }
+      toast.success(`OTP sent to ${email}! Please check your inbox.`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg || 'Failed to send OTP. Please check your college email.')
+      setError(msg || 'Failed to send OTP. Please check your email address.')
       toast.error(msg || 'Failed to send OTP')
     }
   }
@@ -51,7 +45,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     if (!otp || otp.length < 4) {
-      setError('Please enter the 6-digit OTP sent to your college email.')
+      setError('Please enter the 6-digit OTP sent to your email.')
       return
     }
 
@@ -73,6 +67,8 @@ export default function LoginPage() {
         style={{ background: 'radial-gradient(circle, #6C3CE1, transparent)' }} />
       <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 rounded-full opacity-15 blur-3xl"
         style={{ background: 'radial-gradient(circle, #F59E0B, transparent)' }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-5 blur-3xl pointer-events-none"
+        style={{ background: 'radial-gradient(circle, #EE5A50, transparent)' }} />
 
       <div className="w-full max-w-sm relative z-10">
         {/* Logo */}
@@ -81,170 +77,235 @@ export default function LoginPage() {
             <span className="text-3xl">🎓</span>
           </div>
           <h1 className="text-3xl font-black gradient-text-primary">CampusGo</h1>
-          <p className="text-[var(--color-text-muted)] text-sm mt-1">College Email &amp; OTP Login</p>
+          <p className="text-[var(--color-text-muted)] text-sm mt-1">Campus Ordering Platform</p>
         </div>
 
-        {/* Card */}
-        <div className="glass rounded-2xl p-6 space-y-5">
-          {/* Header */}
-          <div className="border-b border-[var(--color-border)] pb-3">
-            <h2 className="text-xl font-bold text-[var(--color-text)]">College Email Login</h2>
-            <p className="text-xs text-[var(--color-text-subtle)] mt-0.5">
-              OTP is sent exclusively to your verified college email address
-            </p>
-          </div>
+        {!showStudent ? (
+          <>
+            {/* Portal Selection */}
+            <div className="space-y-3 mb-6">
+              <p className="text-center text-xs font-extrabold uppercase tracking-widest text-[var(--color-text-muted)] mb-4">
+                Select Your Portal
+              </p>
 
-          {error && (
-            <div className="rounded-xl border border-[rgba(219,75,66,0.2)] bg-[rgba(219,75,66,0.08)] p-3 text-xs font-semibold text-[var(--color-danger)]">
-              {error}
-            </div>
-          )}
-
-          {/* Google Sign-In */}
-          <GoogleSignInButton
-            email={email}
-            onError={setError}
-            onSuccess={() => navigate('/home', { replace: true })}
-          />
-
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-            <span className="text-xs text-[var(--color-text-subtle)] font-medium">or continue with OTP</span>
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-          </div>
-
-          {!otpSent ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-[var(--color-text-muted)] uppercase tracking-wider">
-                  College Email
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={16}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
-                  />
-                  <input
-                    id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="23eg106c27@anurag.edu.in"
-                    autoComplete="email"
-                    className="input-field pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
+              {/* Student Portal */}
               <button
-                id="send-otp-btn"
-                type="submit"
-                disabled={loading}
-                className="btn-primary"
+                type="button"
+                onClick={() => setShowStudent(true)}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(238,90,80,0.3)] bg-[rgba(238,90,80,0.06)] hover:bg-[rgba(238,90,80,0.12)] hover:border-[rgba(238,90,80,0.6)] transition-all duration-200 group cursor-pointer"
               >
-                {loading ? (
-                  <><Loader2 size={18} className="animate-spin" /> Sending OTP…</>
-                ) : (
-                  <>
-                    <span>Send OTP to College Mail</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div className="rounded-xl bg-[rgba(108,60,225,0.08)] border border-[rgba(108,60,225,0.2)] p-3 space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary-light)]">
-                  <CheckCircle2 size={15} /> OTP Sent to:
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-[#EE5A50] to-[#f59e0b] flex items-center justify-center text-white shadow-lg shadow-[rgba(238,90,80,0.3)]">
+                  <span className="text-xl">🎓</span>
                 </div>
-                <div className="text-xs font-bold text-[var(--color-text)] truncate">{email}</div>
+                <div className="flex-1 text-left">
+                  <p className="font-extrabold text-[var(--color-text)] text-sm">Student Portal</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Order food, stationery & print services</p>
+                </div>
+                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-[#EE5A50] group-hover:translate-x-1 transition-all" />
+              </button>
+
+              {/* Delivery Partner Portal */}
+              <Link
+                to="/delivery/login"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.06)] hover:bg-[rgba(16,185,129,0.12)] hover:border-[rgba(16,185,129,0.6)] transition-all duration-200 group"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                  <Bike size={22} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-extrabold text-[var(--color-text)] text-sm">Delivery Partner Portal</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Manage deliveries, bids & earnings</p>
+                </div>
+                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+              </Link>
+
+              {/* Manager Portal */}
+              <Link
+                to="/manager/login"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.06)] hover:bg-[rgba(245,158,11,0.12)] hover:border-[rgba(245,158,11,0.6)] transition-all duration-200 group"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/30">
+                  <ChefHat size={22} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-extrabold text-[var(--color-text)] text-sm">Manager Portal</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Canteen & store order management</p>
+                </div>
+                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+              </Link>
+
+              {/* Admin Portal */}
+              <Link
+                to="/admin/login"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.06)] hover:bg-[rgba(99,102,241,0.12)] hover:border-[rgba(99,102,241,0.6)] transition-all duration-200 group"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/30">
+                  <ShieldCheck size={22} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-extrabold text-[var(--color-text)] text-sm">Admin Portal</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Platform administration & analytics</p>
+                </div>
+                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
+              </Link>
+            </div>
+
+            <p className="text-center text-xs text-[var(--color-text-subtle)]">
+              Select the portal that matches your role to continue
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Student OTP Login Card */}
+            <div className="glass rounded-2xl p-6 space-y-5">
+              {/* Header */}
+              <div className="border-b border-[var(--color-border)] pb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <button
+                    type="button"
+                    onClick={() => { setShowStudent(false); setOtpSent(false); setError(''); setEmail(''); setOtp('') }}
+                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition text-xs font-bold"
+                  >
+                    ← Back
+                  </button>
+                </div>
+                <h2 className="text-xl font-bold text-[var(--color-text)]">Student Login</h2>
+                <p className="text-xs text-[var(--color-text-subtle)] mt-0.5">
+                  OTP will be sent to your college email
+                </p>
               </div>
 
-              {devOtp && (
-                <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs font-semibold text-amber-700 flex items-center justify-between">
-                  <span>Verification Code:</span>
-                  <span className="font-mono font-bold tracking-widest text-base text-[var(--color-primary)]">{devOtp}</span>
+              {error && (
+                <div className="rounded-xl border border-[rgba(219,75,66,0.2)] bg-[rgba(219,75,66,0.08)] p-3 text-xs font-semibold text-[var(--color-danger)]">
+                  {error}
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-[var(--color-text-muted)] uppercase tracking-wider">
-                  Enter 6-Digit OTP
-                </label>
-                <div className="relative">
-                  <KeyRound
-                    size={16}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
-                  />
-                  <input
-                    id="otp-input"
-                    type="text"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="123456"
-                    className="input-field pl-10 tracking-widest text-lg font-bold text-center"
-                    required
-                  />
-                </div>
+              {/* Google Sign-In */}
+              <GoogleSignInButton
+                email={email}
+                onError={setError}
+                onSuccess={() => navigate('/home', { replace: true })}
+              />
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[var(--color-border)]" />
+                <span className="text-xs text-[var(--color-text-subtle)] font-medium">or continue with OTP</span>
+                <div className="flex-1 h-px bg-[var(--color-border)]" />
               </div>
 
-              <button
-                id="verify-otp-btn"
-                type="submit"
-                disabled={loading}
-                className="btn-primary"
-              >
-                {loading ? (
-                  <><Loader2 size={18} className="animate-spin" /> Verifying…</>
-                ) : (
-                  'Verify & Login'
-                )}
-              </button>
+              {!otpSent ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-[var(--color-text-muted)] uppercase tracking-wider">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail
+                        size={16}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
+                      />
+                      <input
+                        id="login-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@anurag.edu.in"
+                        autoComplete="email"
+                        className="input-field pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex justify-between items-center pt-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setOtpSent(false)}
-                  className="text-[var(--color-text-subtle)] hover:text-[var(--color-text)] transition"
-                >
-                  ← Change Email
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={loading}
-                  className="flex items-center gap-1 text-[var(--color-primary-light)] hover:underline"
-                >
-                  <RefreshCw size={12} /> Resend OTP
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+                  <button
+                    id="send-otp-btn"
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary"
+                  >
+                    {loading ? (
+                      <><Loader2 size={18} className="animate-spin" /> Sending OTP…</>
+                    ) : (
+                      <>
+                        <span>Send OTP</span>
+                        <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="rounded-xl bg-[rgba(108,60,225,0.08)] border border-[rgba(108,60,225,0.2)] p-3 space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary-light)]">
+                      <CheckCircle2 size={15} /> OTP Sent to:
+                    </div>
+                    <div className="text-xs font-bold text-[var(--color-text)] truncate">{email}</div>
+                  </div>
 
-        <div className="mt-6 pt-5 border-t border-[var(--color-border)] flex items-center justify-between text-xs">
-          <Link
-            to="/delivery/login"
-            className="flex items-center gap-1.5 font-bold text-emerald-600 hover:text-emerald-700 transition"
-          >
-            🛵 Delivery Partner Portal →
-          </Link>
-          <Link
-            to="/admin/login"
-            className="flex items-center gap-1.5 font-bold text-indigo-600 hover:text-indigo-700 transition"
-          >
-            🛡️ Admin Portal →
-          </Link>
-        </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-[var(--color-text-muted)] uppercase tracking-wider">
+                      Enter 6-Digit OTP
+                    </label>
+                    <div className="relative">
+                      <KeyRound
+                        size={16}
+                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]"
+                      />
+                      <input
+                        id="otp-input"
+                        type="text"
+                        maxLength={6}
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        placeholder="123456"
+                        className="input-field pl-10 tracking-widest text-lg font-bold text-center"
+                        required
+                      />
+                    </div>
+                  </div>
 
-        <p className="text-center text-xs text-[var(--color-text-subtle)] mt-4">
-          Only valid college emails (@anurag.edu.in) are authorized for students.
-          <br />OTP is sent to your official campus email address.
-        </p>
+                  <button
+                    id="verify-otp-btn"
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary"
+                  >
+                    {loading ? (
+                      <><Loader2 size={18} className="animate-spin" /> Verifying…</>
+                    ) : (
+                      'Verify & Login'
+                    )}
+                  </button>
+
+                  <div className="flex justify-between items-center pt-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setOtpSent(false)}
+                      className="text-[var(--color-text-subtle)] hover:text-[var(--color-text)] transition"
+                    >
+                      ← Change Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={loading}
+                      className="flex items-center gap-1 text-[var(--color-primary-light)] hover:underline"
+                    >
+                      <RefreshCw size={12} /> Resend OTP
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            <p className="text-center text-xs text-[var(--color-text-subtle)] mt-4">
+              Only valid college emails (@anurag.edu.in) are authorized for students.
+              <br />OTP is sent to your official campus email address.
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

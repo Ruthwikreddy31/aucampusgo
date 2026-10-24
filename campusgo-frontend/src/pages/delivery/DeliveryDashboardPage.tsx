@@ -17,29 +17,37 @@ export default function DeliveryDashboardPage() {
   const [stats, setStats] = useState<DeliveryStats | null>(null)
   const [dailyFee, setDailyFee] = useState<DeliveryPartnerDailyFee | null>(null)
   const [wallet, setWallet] = useState<DeliveryPartnerWallet | null>(null)
+  const [dashboardError, setDashboardError] = useState('')
+  const [dailyFeeError, setDailyFeeError] = useState('')
   const [loading, setLoading] = useState(true)
   const [payingFee, setPayingFee] = useState(false)
 
   const loadData = async (isInitial = false) => {
     if (isInitial) setLoading(true)
-    try {
-      const [active, available, deliveryStats, feeStatus, courierWallet] = await Promise.all([
-        deliveryService.getActiveOrders(),
-        deliveryService.getAvailableOrders(),
-        deliveryService.getStats().catch(() => null),
-        biddingService.getDailyFeeStatus(user?.id),
-        biddingService.getWallet(user?.id),
-      ])
-      setActiveOrders(active)
-      setAvailableCount(available.length)
-      if (deliveryStats) setStats(deliveryStats)
-      if (feeStatus) setDailyFee(feeStatus)
-      if (courierWallet) setWallet(courierWallet)
-    } catch (e) {
-      console.error('Failed to load courier dashboard:', e)
-    } finally {
-      if (isInitial) setLoading(false)
+    const [activeResult, availableResult, statsResult, feeResult, walletResult] = await Promise.allSettled([
+      deliveryService.getActiveOrders(),
+      deliveryService.getAvailableOrders(),
+      deliveryService.getStats(),
+      biddingService.getDailyFeeStatus(user?.id),
+      biddingService.getWallet(user?.id),
+    ])
+
+    if (activeResult.status === 'fulfilled') setActiveOrders(activeResult.value)
+    if (availableResult.status === 'fulfilled') {
+      setAvailableCount(availableResult.value.length)
+      setDashboardError('')
+    } else {
+      setDashboardError(availableResult.reason?.message || 'Cannot connect to CampusGo. Check that the backend server is running.')
     }
+    if (statsResult.status === 'fulfilled') setStats(statsResult.value)
+    if (feeResult.status === 'fulfilled') {
+      setDailyFee(feeResult.value)
+      setDailyFeeError('')
+    } else {
+      setDailyFeeError(feeResult.reason?.message || 'Cannot connect to the server to verify your pass.')
+    }
+    if (walletResult.status === 'fulfilled') setWallet(walletResult.value)
+    if (isInitial) setLoading(false)
   }
 
   const handlePayDailyFee = async () => {
@@ -50,8 +58,8 @@ export default function DeliveryDashboardPage() {
       const updatedWallet = await biddingService.getWallet(user?.id)
       setWallet(updatedWallet)
       toast.success('₹10 Daily Campus Access Fee paid! You are active for deliveries today. 🛵')
-    } catch (err) {
-      toast.error('Failed to process daily fee payment')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to process daily fee payment')
     } finally {
       setPayingFee(false)
     }
@@ -59,7 +67,16 @@ export default function DeliveryDashboardPage() {
 
   useEffect(() => {
     loadData(true)
-  }, [])
+    // The dashboard must receive requests that are created after the courier
+    // has opened it. The Orders page already polls; keep this summary in sync.
+    const refreshTimer = window.setInterval(() => loadData(false), 4000)
+    const handleOrderUpdate = () => loadData(false)
+    window.addEventListener('campusgo-order-updated', handleOrderUpdate)
+    return () => {
+      window.clearInterval(refreshTimer)
+      window.removeEventListener('campusgo-order-updated', handleOrderUpdate)
+    }
+  }, [user?.id])
 
   const statCards = [
     {
@@ -113,6 +130,12 @@ export default function DeliveryDashboardPage() {
         </div>
       </div>
 
+      {dashboardError && (
+        <div role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
+          {dashboardError} Order requests may be unavailable until the server reconnects.
+        </div>
+      )}
+
       {/* ZestModel Daily Access Fee Status Banner */}
       <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-5 backdrop-blur-xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
@@ -122,17 +145,27 @@ export default function DeliveryDashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black text-white">Daily Campus Access Pass</h2>
-              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${dailyFee?.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
-                {dailyFee?.status === 'PAID' ? '🟢 Active Today (₹10 Paid)' : '🟡 Unpaid (₹10/Day)'}
+              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${dailyFee?.status === 'PAID' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : dailyFeeError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+                {dailyFee?.status === 'PAID' ? '🟢 Active Today (₹10 Paid)' : dailyFeeError ? '⚠ Pass status unavailable' : '🟡 Unpaid (₹10/Day)'}
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
               ZestModel flat ₹10 calendar day courier access. Unlocks live student order bidding.
             </p>
+            {dailyFeeError && <p className="mt-1 text-xs font-semibold text-red-300">{dailyFeeError}</p>}
           </div>
         </div>
 
-        {dailyFee?.status !== 'PAID' && (
+        {dailyFeeError ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => loadData(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-black text-xs transition disabled:opacity-50 shrink-0"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Retry Pass Check
+          </button>
+        ) : dailyFee?.status !== 'PAID' && (
           <button
             type="button"
             disabled={payingFee}

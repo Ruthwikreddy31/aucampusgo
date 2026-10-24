@@ -46,6 +46,37 @@ public class DataSeeder {
         @Value("${app.demo.agent-password:}")
         private String demoAgentPassword;
 
+	/**
+	 * Moves only the known retired Uppal delivery center to the requested
+	 * Maheshwaram center. This runs independently of demo-data seeding so an
+	 * existing production database is corrected on its next backend restart.
+	 */
+	@Bean
+	public CommandLineRunner migrateRetiredCampusLocation() {
+		return args -> {
+			var latitude = campusSettingRepository.findBySettingKey("campus.latitude");
+			var longitude = campusSettingRepository.findBySettingKey("campus.longitude");
+			boolean usesRetiredCenter = latitude.map(s -> "17.4018".equals(s.getSettingValue())).orElse(false)
+					|| longitude.map(s -> "78.5602".equals(s.getSettingValue())).orElse(false);
+
+			if (!usesRetiredCenter) return;
+
+			latitude.ifPresent(s -> {
+				s.setSettingValue("17.92119444");
+				campusSettingRepository.save(s);
+			});
+			longitude.ifPresent(s -> {
+				s.setSettingValue("79.85761111");
+				campusSettingRepository.save(s);
+			});
+			campusSettingRepository.findBySettingKey("campus_name").ifPresent(s -> {
+				s.setSettingValue("Maheshwaram, Narsampet, Warangal");
+				campusSettingRepository.save(s);
+			});
+			log.info("Migrated CampusGo delivery center to Maheshwaram, Narsampet, Warangal");
+		};
+	}
+
         @Bean
         public CommandLineRunner initData() {
                 return args -> {
@@ -149,6 +180,7 @@ public class DataSeeder {
                                                 DeliveryAgent agent = DeliveryAgent.builder()
                                                                 .user(agentUser)
                                                                 .availabilityStatus("AVAILABLE")
+                                                                .partnerStatus("INACTIVE")
                                                                 .build();
                                                 deliveryAgentRepository.save(agent);
                                         }
@@ -511,14 +543,14 @@ public class DataSeeder {
                                                 .imageUrl("https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=700&q=80")
                                                 .available(true).active(true).build());
 
-				// Seed initial campus settings or ensure Uppal Hyderabad coordinates are configured
+				// Seed initial campus settings or ensure Maheshwaram, Narsampet coordinates are configured
 				if (campusSettingRepository.count() == 0) {
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus_name").settingValue("Anurag University - Uppal Delivery Zone").description("Official campus and delivery zone name").build());
+							.settingKey("campus_name").settingValue("Maheshwaram, Narsampet, Warangal").description("Official campus and delivery zone name").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus.latitude").settingValue("17.4018").description("Center latitude (Uppal, Hyderabad)").build());
+							.settingKey("campus.latitude").settingValue("17.92119444").description("Center latitude (Maheshwaram, Narsampet, Warangal)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-							.settingKey("campus.longitude").settingValue("78.5602").description("Center longitude (Uppal, Hyderabad)").build());
+							.settingKey("campus.longitude").settingValue("79.85761111").description("Center longitude (Maheshwaram, Narsampet, Warangal)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
 							.settingKey("delivery.radius.meters").settingValue("15000").description("Campus delivery boundary in meters (covers up to Uppal)").build());
 					campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
@@ -531,15 +563,20 @@ public class DataSeeder {
 							.settingKey("operating_hours").settingValue("8:00 AM – 9:00 PM").description("Campus service hours").build());
 				} else {
 					// Ensure campus latitude/longitude and updated radius exist if seeded previously without them
-					campusSettingRepository.findBySettingKey("campus.latitude").ifPresentOrElse(
-							s -> { s.setSettingValue("17.4018"); campusSettingRepository.save(s); },
+					campusSettingRepository.findBySettingKey("campus_name").ifPresentOrElse(
+							s -> { s.setSettingValue("Maheshwaram, Narsampet, Warangal"); campusSettingRepository.save(s); },
 							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-									.settingKey("campus.latitude").settingValue("17.4018").description("Center latitude (Uppal, Hyderabad)").build())
+								.settingKey("campus_name").settingValue("Maheshwaram, Narsampet, Warangal").description("Official campus and delivery zone name").build())
+					);
+					campusSettingRepository.findBySettingKey("campus.latitude").ifPresentOrElse(
+							s -> { s.setSettingValue("17.92119444"); campusSettingRepository.save(s); },
+							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
+								.settingKey("campus.latitude").settingValue("17.92119444").description("Center latitude (Maheshwaram, Narsampet, Warangal)").build())
 					);
 					campusSettingRepository.findBySettingKey("campus.longitude").ifPresentOrElse(
-							s -> { s.setSettingValue("78.5602"); campusSettingRepository.save(s); },
+							s -> { s.setSettingValue("79.85761111"); campusSettingRepository.save(s); },
 							() -> campusSettingRepository.save(com.campusgo.backend.models.CampusSetting.builder()
-									.settingKey("campus.longitude").settingValue("78.5602").description("Center longitude (Uppal, Hyderabad)").build())
+								.settingKey("campus.longitude").settingValue("79.85761111").description("Center longitude (Maheshwaram, Narsampet, Warangal)").build())
 					);
 					campusSettingRepository.findBySettingKey("delivery.radius.meters").ifPresentOrElse(
 							s -> { s.setSettingValue("15000"); campusSettingRepository.save(s); },

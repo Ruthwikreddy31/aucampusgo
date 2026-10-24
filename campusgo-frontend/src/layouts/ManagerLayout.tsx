@@ -1,8 +1,11 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Store, Package,
-  ClipboardList, BarChart2, Settings, Bike, ChefHat,
+  ClipboardList, BarChart2, Settings, Bike, ChefHat, LogOut, ShieldCheck,
 } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
+import { hasRole } from '../utils/roles'
+import { toast } from 'sonner'
 
 const navItems = [
   { to: '/canteen/orders',            icon: ChefHat,         label: 'Canteen Kitchen' },
@@ -17,35 +20,86 @@ const navItems = [
 ]
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useAuthStore()
+  const navigate = useNavigate()
+  const isAdmin = hasRole(user, 'ADMIN')
+
+  const handleLogout = async () => {
+    await logout()
+    toast.success('Logged out from Manager Portal')
+    navigate('/manager/login')
+  }
+
   return (
     <div className="flex min-h-dvh bg-[var(--color-bg)]">
       {/* Sidebar — desktop */}
-      <aside className="hidden md:flex flex-col w-60 bg-[var(--color-surface)] border-r border-[var(--color-border)] py-6 px-3 gap-1 fixed h-full z-40">
-        <div className="px-3 mb-6">
-          <h1 className="text-xl font-black gradient-text-primary">CampusGo</h1>
-          <p className="text-xs text-[var(--color-text-subtle)] font-medium mt-0.5">Manager Console</p>
+      <aside className="hidden md:flex flex-col w-64 bg-[var(--color-surface)] border-r border-[var(--color-border)] py-6 px-3 gap-1 fixed h-full z-40">
+        <div className="px-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+              <ChefHat size={22} />
+            </div>
+            <div>
+              <h1 className="text-lg font-black text-[var(--color-text)]">CampusGo</h1>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-amber-600">Manager Portal</p>
+            </div>
+          </div>
         </div>
-        {navItems.map(({ to, icon: Icon, label, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200
-              ${isActive
-                ? 'bg-[rgba(108,60,225,0.2)] text-[var(--color-primary-light)] border border-[rgba(108,60,225,0.3)]'
-                : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]'
-              }`
-            }
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
+
+        <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+          {navItems.map(({ to, icon: Icon, label, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-200
+                ${isActive
+                  ? 'bg-amber-500/15 text-amber-600 border border-amber-500/30 shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]'
+                }`
+              }
+            >
+              <Icon size={17} />
+              {label}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Manager User & Actions Footer */}
+        <div className="pt-3 border-t border-[var(--color-border)] px-1 space-y-2 mt-auto">
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition"
+            >
+              <ShieldCheck size={16} />
+              <span>Switch to Admin Portal</span>
+            </Link>
+          )}
+
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="min-w-0 pr-2">
+              <p className="text-xs font-black text-[var(--color-text)] truncate">
+                {user?.name || 'Canteen Manager'}
+              </p>
+              <p className="text-[10px] text-[var(--color-text-subtle)] truncate">
+                {user?.email || 'manager@campusgo.com'}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Logout from Manager Portal"
+              className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-60 overflow-y-auto pb-20 md:pb-6">
+      <main className="flex-1 md:ml-64 overflow-y-auto pb-20 md:pb-6">
         {children}
       </main>
 

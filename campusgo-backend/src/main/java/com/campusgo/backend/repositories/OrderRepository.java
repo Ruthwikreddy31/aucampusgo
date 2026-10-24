@@ -26,7 +26,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     long countByDeliveryAgentUserIdAndOrderStatus(Long userId, OrderStatus status);
     long countByDeliveryAgentIdAndOrderStatus(Long agentId, OrderStatus status);
 
-    @Query("select o from Order o where upper(o.biddingStatus) = 'OPEN' and o.orderStatus not in ('DELIVERED','CANCELLED','REJECTED') order by o.createdAt desc")
+    @Query("select o from Order o where o.deliveryAgent is null and o.selectedDeliveryPartnerId is null and o.orderStatus not in ('DELIVERED','CANCELLED','REJECTED') order by o.createdAt desc")
     List<Order> findAllOpenBiddingOrders();
 
     @Query("select o from Order o where o.selectedDeliveryPartnerId = :partnerId and o.orderStatus not in ('DELIVERED','CANCELLED','REJECTED') order by o.createdAt desc")

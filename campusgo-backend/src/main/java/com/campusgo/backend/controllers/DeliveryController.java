@@ -49,25 +49,11 @@ public class DeliveryController {
         if (app.isPresent()) {
             return app.get().getStatus() == ApplicationStatus.APPROVED;
         }
-        return true;
+        return false;
     }
 
     private boolean isEligibleDeliveryPartner(User user) {
-        if (!isApprovedDeliveryPartner(user)) {
-            return false;
-        }
-        DeliveryAgent agent = getOrCreateAgent(user);
-        if (agent.getPartnerStatus() == null) {
-            agent.setPartnerStatus("ACTIVE");
-            agent = deliveryAgentRepository.save(agent);
-        }
-        if (agent.getAvailabilityStatus() == null) {
-            agent.setAvailabilityStatus("AVAILABLE");
-            agent = deliveryAgentRepository.save(agent);
-        }
-        boolean activePartner = "ACTIVE".equalsIgnoreCase(agent.getPartnerStatus());
-        boolean available = !"OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus());
-        return activePartner && available;
+        return biddingService.isEligiblePartner(user);
     }
 
     private boolean isAssignedTo(Order order, User user) {
@@ -82,7 +68,7 @@ public class DeliveryController {
                     DeliveryAgent newAgent = DeliveryAgent.builder()
                             .user(user)
                             .availabilityStatus("AVAILABLE")
-                            .partnerStatus("ACTIVE")
+                            .partnerStatus("INACTIVE")
                             .build();
                     return deliveryAgentRepository.save(newAgent);
                 });
@@ -275,6 +261,29 @@ public class DeliveryController {
         return ResponseEntity.ok(response);
     }
 
+    /** Kitchen contact is intentionally limited to the courier selected for this order. */
+    @GetMapping("/orders/{orderId}/pickup-contact")
+    public ResponseEntity<?> getPickupContact(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+        User courier = userRepository.findById(userDetails.getId()).orElse(null);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (courier == null || order == null || !courier.hasRole(Role.DELIVERY_PARTNER) || !isAssignedTo(order, courier)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Kitchen contact is available only to the assigned delivery partner."));
+        }
+
+        User manager = order.getShop() != null && order.getShop().getManagerUserId() != null
+                ? userRepository.findById(order.getShop().getManagerUserId()).orElse(null) : null;
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("shopName", order.getShop() != null ? order.getShop().getName() : "Campus Canteen");
+        response.put("pickupLocation", order.getShop() != null && order.getShop().getLocation() != null
+                ? order.getShop().getLocation() : "Campus Canteen Counter");
+        response.put("managerName", manager != null ? manager.getName() : "Canteen Manager");
+        response.put("managerPhone", manager != null && manager.getPhone() != null ? manager.getPhone() : "");
+        return ResponseEntity.ok(response);
+    }
+
     @RequestMapping(value = "/orders/{orderId}/pickup", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<?> pickupOrder(
             @PathVariable Long orderId,
@@ -289,7 +298,11 @@ public class DeliveryController {
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        if (!isAssignedTo(order, user)) {
+        if (order.getDeliveryAgent() == null) {
+            DeliveryAgent agent = getOrCreateAgent(user);
+            order.setDeliveryAgent(agent);
+            order.setSelectedDeliveryPartnerId(user.getId());
+        } else if (!isAssignedTo(order, user)) {
             return ResponseEntity.status(403).body(Map.of("message", "Pickup is allowed only for your assigned delivery"));
         }
 
@@ -423,7 +436,7 @@ public class DeliveryController {
         deliveryAgentRepository.save(agent);
 
         // Record status history & credit earning
-        biddingService.recordStatusHistory(orderId, oldStatus, OrderStatus.DELIVERED.name(), user.getName(), "Delivered to customer with OTP verification");
+        biddingService.recordStatusHistory(orderId, oldStatus, OrderStatus.DELIVERED.name(), user.getName(), "Delivered to customer with OTP verification and photo proof");
         eventPublisher.publishOrderStatusChanged(orderId, OrderStatus.DELIVERED.name(), updated);
 
         Double earningAmount = order.getDeliveryFee() != null ? order.getDeliveryFee().doubleValue() : 15.0;
@@ -496,5 +509,24 @@ public class DeliveryController {
                 "rating", partnerRating,
                 "reviewCount", reviewCount
         ));
+    }
+
+    @GetMapping("/proof/{filename}")
+    public ResponseEntity<?> getDeliveryProofImage(@PathVariable String filename) {
+        try {
+            org.springframework.core.io.Resource resource = storageService.loadFileAsResource(filename);
+            String contentType = "image/jpeg";
+            String lower = filename.toLowerCase();
+            if (lower.endsWith(".png")) {
+                contentType = "image/png";
+            } else if (lower.endsWith(".webp")) {
+                contentType = "image/webp";
+            }
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

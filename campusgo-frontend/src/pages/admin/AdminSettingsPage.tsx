@@ -74,8 +74,8 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings['campus.name'] || 'Anurag University Hyderabad'}
-                onChange={(e) => handleChange('campus.name', e.target.value)}
+                value={settings.campus_name || 'Maheshwaram, Narsampet, Warangal'}
+                onChange={(e) => handleChange('campus_name', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
             </div>
@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings['campus.latitude'] || '17.4018'}
+                value={settings['campus.latitude'] || '17.92119444'}
                 onChange={(e) => handleChange('campus.latitude', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
@@ -110,7 +110,7 @@ export default function AdminSettingsPage() {
               </label>
               <input
                 type="text"
-                value={settings['campus.longitude'] || '78.5602'}
+                value={settings['campus.longitude'] || '79.85761111'}
                 onChange={(e) => handleChange('campus.longitude', e.target.value)}
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-indigo-500"
               />
@@ -192,15 +192,15 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* Printing & Xerox Service Configuration (Section 23 Admin Requirement) */}
+        {/* Printing Service Configuration (Section 23 Admin Requirement) */}
         <div className="rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6 backdrop-blur-xl shadow-xl space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-cyan-500/20">
             <Printer size={18} className="text-cyan-400" />
-            <h2 className="font-extrabold text-white text-base">Printing & Xerox Configuration (Readers Shop)</h2>
+            <h2 className="font-extrabold text-white text-base">Printing Configuration (Readers Shop)</h2>
             <span className="ml-auto px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] font-bold uppercase tracking-widest">Readers</span>
           </div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Configure per-page printing rates, supported document formats, and upload limits for campus xerox and printing services.
+            Configure per-page printing rates, supported document formats, and upload limits for campus printing services.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -216,7 +216,7 @@ export default function AdminSettingsPage() {
                 className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white outline-none focus:border-cyan-500"
                 min={0.5}
               />
-              <p className="text-[10px] text-slate-500 mt-1">Default black and white xerox rate (e.g. ₹2.00/page).</p>
+              <p className="text-[10px] text-slate-500 mt-1">Default black and white print rate (e.g. ₹2.00/page).</p>
             </div>
 
             <div>

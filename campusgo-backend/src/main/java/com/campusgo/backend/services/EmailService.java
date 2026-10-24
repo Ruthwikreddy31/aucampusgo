@@ -23,22 +23,38 @@ public class EmailService {
         this.mailSenderProvider = mailSenderProvider;
     }
 
+    private volatile String lastError;
+
+    public String getLastError() {
+        return lastError;
+    }
+
     public boolean isConfigured() {
-        return mailEnabled
-                && mailSenderProvider.getIfAvailable() != null
-                && fromAddress != null
-                && !fromAddress.isBlank();
+        if (!mailEnabled) {
+            lastError = "Mail is disabled in configuration (app.mail.enabled=false)";
+            return false;
+        }
+        if (fromAddress == null || fromAddress.isBlank()) {
+            lastError = "Mail sender fromAddress is not configured (spring.mail.username is empty)";
+            return false;
+        }
+        if (mailSenderProvider.getIfAvailable() == null) {
+            lastError = "JavaMailSender bean is not available in Spring context";
+            return false;
+        }
+        return true;
     }
 
     public boolean sendOtpEmail(String toEmail, String otp) {
         if (!isConfigured()) {
-            log.warn("Mail not configured. OTP for [{}] was generated but not emailed.", toEmail);
+            log.warn("Mail not configured: {}. OTP for [{}] was generated but not emailed.", lastError, toEmail);
             return false;
         }
 
         try {
             JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
             if (mailSender == null) {
+                lastError = "JavaMailSender bean became unavailable";
                 return false;
             }
 
@@ -51,9 +67,11 @@ public class EmailService {
                             + "This code expires in 5 minutes.\n"
                             + "If you did not request this, you can ignore this email.");
             mailSender.send(message);
+            lastError = null;
             log.info("OTP email sent to [{}]", toEmail);
             return true;
         } catch (Exception ex) {
+            lastError = ex.getClass().getSimpleName() + ": " + ex.getMessage();
             log.error("Failed to send OTP email to [{}]: {}", toEmail, ex.getMessage(), ex);
             return false;
         }

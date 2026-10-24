@@ -28,15 +28,15 @@ import {
 export const CANTEEN_MANAGER_INFO = {
   name: 'Suresh Reddy (Canteen Manager)',
   canteenName: 'Central Campus Canteen & Food Court',
-  address: 'Ground Floor, Student Activity Center (Near Central Library & Main Block), Anurag University, Hyderabad',
+  address: 'Ground Floor, Student Activity Center (Near Central Library & Main Block), Narsampet, Warangal',
   phone: '+91 98490 11223',
   hours: '8:00 AM – 9:00 PM',
 }
 
 export const READERS_MANAGER_INFO = {
-  name: 'Readers Stationery & Xerox Manager',
-  canteenName: 'Readers Stationery & Xerox Station',
-  address: 'Ground Floor, Readers Block / Library Arcade, Anurag University, Hyderabad',
+  name: 'Readers Stationery & Print Manager',
+  canteenName: 'Readers Stationery & Print Station',
+  address: 'Ground Floor, Readers Block / Library Arcade, Narsampet, Warangal',
   phone: '+91 98490 55667',
   hours: '8:30 AM – 7:30 PM',
 }
@@ -47,16 +47,19 @@ export default function ManagerOrdersPage() {
   const [printJobs, setPrintJobs] = useState<PrintJob[]>([])
   const [agents, setAgents] = useState<DeliveryAgent[]>([])
   const [loading, setLoading] = useState(true)
+  const [ordersLoadError, setOrdersLoadError] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [assigningAgent, setAssigningAgent] = useState<number | null>(null)
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
   const [updatingJobId, setUpdatingJobId] = useState<number | null>(null)
 
-  const loadData = () => {
-    Promise.all([
-      managerService.getOrders(),
-      printService.getManagerJobs().catch(() => []),
-      api.get<DeliveryAgent[]>('/api/manager/agents').then((r: { data: DeliveryAgent[] }) => r.data).catch(() => [
+  const loadData = async (isInitial = false) => {
+    if (isInitial) setLoading(true)
+    try {
+      const [o, pj, a] = await Promise.all([
+        managerService.getOrders(),
+        printService.getManagerJobs().catch(() => []),
+        api.get<DeliveryAgent[]>('/api/manager/agents').then((r: { data: DeliveryAgent[] }) => r.data).catch(() => [
         {
           id: 101,
           userId: 101,
@@ -77,23 +80,32 @@ export default function ManagerOrdersPage() {
           currentLongitude: 78.5602,
         } as DeliveryAgent
       ]),
-    ]).then(([o, pj, a]) => {
+      ])
       setOrders(o.sort((first: Order, second: Order) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()))
       setPrintJobs(pj)
       setAgents(a)
-    }).finally(() => setLoading(false))
+      setOrdersLoadError('')
+    } catch (error: any) {
+      setOrdersLoadError(error?.response?.data?.message || error?.message || 'Could not load orders from the server.')
+    } finally {
+      if (isInitial) setLoading(false)
+    }
   }
 
   useEffect(() => {
-    loadData()
+    loadData(true)
 
     // Listen to real-time events across tabs/panels
     const handleOrderUpdate = () => loadData()
     window.addEventListener('campusgo-order-updated', handleOrderUpdate)
     window.addEventListener('storage', handleOrderUpdate)
+    // Customer and manager commonly use separate browser sessions. Polling keeps
+    // the kitchen queue current even when a browser-local event cannot cross tabs.
+    const refreshInterval = window.setInterval(loadData, 4000)
     return () => {
       window.removeEventListener('campusgo-order-updated', handleOrderUpdate)
       window.removeEventListener('storage', handleOrderUpdate)
+      window.clearInterval(refreshInterval)
     }
   }, [])
 
@@ -194,11 +206,11 @@ export default function ManagerOrdersPage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader
-        title={activeTab === 'CANTEEN' ? 'Canteen Orders & Fulfillment' : 'Readers Print & Xerox Operations'}
+        title={activeTab === 'CANTEEN' ? 'Canteen Orders & Fulfillment' : 'Readers Print Operations'}
         subtitle={activeTab === 'CANTEEN' ? `${orders.length} total orders` : `${printJobs.length} total print requests`}
         right={
           <button
-            onClick={loadData}
+            onClick={() => loadData(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--color-border)] bg-white text-xs font-bold text-[var(--color-text)] hover:border-[var(--color-primary)] transition cursor-pointer"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
@@ -207,6 +219,12 @@ export default function ManagerOrdersPage() {
       />
 
       <div className="px-4 pt-3 pb-12 space-y-4 max-w-4xl mx-auto">
+        {ordersLoadError && (
+          <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+            Could not refresh kitchen orders: {ordersLoadError}. Check the backend connection and use Refresh to try again.
+          </div>
+        )}
+
         {/* Shop Switcher Tabs */}
         <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-3 overflow-x-auto">
           <button
@@ -232,7 +250,7 @@ export default function ManagerOrdersPage() {
             }`}
           >
             <Printer size={15} />
-            <span>Readers Print & Xerox Jobs ({printJobs.length})</span>
+            <span>Readers Print Jobs ({printJobs.length})</span>
           </button>
         </div>
 
@@ -446,7 +464,7 @@ export default function ManagerOrdersPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-purple-700 font-black text-sm">
                   <Printer size={18} />
-                  <span>Readers Stationery & Xerox Station</span>
+                  <span>Readers Stationery & Print Station</span>
                 </div>
                 <span className="text-[11px] font-extrabold text-purple-700 bg-purple-100 border border-purple-300 px-2.5 py-0.5 rounded-full">
                   Printing Service Active
@@ -502,7 +520,7 @@ export default function ManagerOrdersPage() {
                           </span>
                         </div>
                         <p className="text-xs text-[var(--color-text-subtle)] mt-0.5">
-                          {job.createdAt ? format(new Date(job.createdAt), 'dd MMM, hh:mm a') : 'Recent Request'} • Readers Xerox Counter
+                          {job.createdAt ? format(new Date(job.createdAt), 'dd MMM, hh:mm a') : 'Recent Request'} • Readers Print Counter
                         </p>
                       </div>
                       <div className="text-right">

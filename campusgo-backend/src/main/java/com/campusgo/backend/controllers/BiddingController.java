@@ -26,6 +26,7 @@ public class BiddingController {
     private final DeliveryRequestRepository requestRepository;
     private final com.campusgo.backend.repositories.DeliveryBidRepository bidRepository;
     private final UserRepository userRepository;
+    private final WalletController walletController;
 
     // ──────────────────────────────────────────────────────────────────────────
     // DELIVERY REQUEST CREATION & RETRIEVAL
@@ -257,5 +258,10 @@ public class BiddingController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(409).body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @GetMapping({"/api/bidding/courier/{partnerId}/wallet", "/api/bidding/partner/{partnerId}/wallet"})
+    public ResponseEntity<?> getCourierWallet(@PathVariable Long partnerId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return walletController.getWallet(partnerId, userDetails);
     }
 }

@@ -13,6 +13,13 @@ export interface DeliveryStats {
   rating: number
 }
 
+export interface PickupContact {
+  shopName: string
+  pickupLocation: string
+  managerName: string
+  managerPhone: string
+}
+
 const LOCAL_ORDERS_KEY = 'campusgo_orders'
 
 function getStoredOrders(): Order[] {
@@ -49,6 +56,11 @@ function getCurrentCourierUser(): User {
 }
 
 export const deliveryService = {
+  async getPickupContact(orderId: number): Promise<PickupContact> {
+    const { data } = await api.get<PickupContact>(`/api/delivery/orders/${orderId}/pickup-contact`)
+    return data
+  },
+
   async getAssignedOrders(): Promise<Order[]> {
     try {
       const { data } = await api.get<Order[]>('/api/delivery/orders')
@@ -62,14 +74,8 @@ export const deliveryService = {
     try {
       const { data } = await api.get<Order[]>('/api/delivery/available-orders')
       return data
-    } catch {
-      // Orders that are accepted, preparing, or ready for pickup and haven't been claimed yet
-      const orders = getStoredOrders()
-      return orders.filter(
-        (o) =>
-          ['PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(o.orderStatus) &&
-          !o.deliveryAgentId
-      )
+    } catch (error: any) {
+      throw new Error(error?.response?.data?.message || error?.message || 'Could not load delivery requests from CampusGo.')
     }
   },
 

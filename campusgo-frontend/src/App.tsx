@@ -57,6 +57,7 @@ import DeliveryHistoryPage from './pages/delivery/DeliveryHistoryPage'
 import DeliveryProfilePage from './pages/delivery/DeliveryProfilePage'
 
 // Manager pages
+import ManagerLoginPage from './pages/manager/ManagerLoginPage'
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage'
 import ManagerShopsPage from './pages/manager/ManagerShopsPage'
 import ManagerProductsPage from './pages/manager/ManagerProductsPage'
@@ -247,6 +248,9 @@ function AppRoutes() {
           <ManagerLayout><ManagerSettingsPage /></ManagerLayout>
         </ProtectedRoute>
       } />
+
+      {/* ── Manager dedicated login ──────────────────────────── */}
+      <Route path="/manager/login" element={<ManagerLoginPage />} />
 
       {/* ── Admin dedicated login ─────────────────────────────── */}
       <Route path="/admin/login" element={<AdminLoginPage />} />

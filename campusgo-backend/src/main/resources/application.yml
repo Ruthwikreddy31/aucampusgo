@@ -8,7 +8,7 @@ spring:
     name: campusgo-backend
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campusgo}?useSSL=${DB_USE_SSL:false}&serverTimezone=UTC&allowPublicKeyRetrieval=false
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:campusgo}?useSSL=${DB_USE_SSL:false}&serverTimezone=Asia/Kolkata&allowPublicKeyRetrieval=false
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     
@@ -77,7 +77,7 @@ app:
   delivery:
     earning-per-delivery: ${DELIVERY_EARNING_PER_DELIVERY:15.00}
   campus:
-    name: ${CAMPUS_NAME:Anurag University - Uppal Delivery Zone}
-    latitude: ${CAMPUS_LATITUDE:17.4018}
-    longitude: ${CAMPUS_LONGITUDE:78.5602}
+    name: ${CAMPUS_NAME:Maheshwaram, Narsampet, Warangal}
+    latitude: ${CAMPUS_LATITUDE:17.92119444}
+    longitude: ${CAMPUS_LONGITUDE:79.85761111}
     radius-meters: ${CAMPUS_RADIUS_METERS:15000.0}

@@ -10,7 +10,8 @@ interface ProtectedRouteProps {
 
 function homeFor(user: { roles?: UserRole[]; role?: UserRole | 'DELIVERY_AGENT' | 'MANAGER' }) {
   const userRoles = getUserRoles(user)
-  if (userRoles.includes('ADMIN') || userRoles.includes('CANTEEN_MEMBER')) return '/manager'
+  if (userRoles.includes('ADMIN')) return '/admin'
+  if (userRoles.includes('MANAGER') || userRoles.includes('CANTEEN_MEMBER') || userRoles.includes('STORE_STAFF')) return '/manager'
   if (userRoles.includes('DELIVERY_PARTNER')) return '/delivery'
   return '/home'
 }
@@ -26,6 +27,12 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   if (!initialized) return null
 
   if (!user) {
+    if (location.pathname.startsWith('/admin')) {
+      return <Navigate to="/admin/login" state={{ from: location }} replace />
+    }
+    if (location.pathname.startsWith('/manager') || location.pathname.startsWith('/canteen')) {
+      return <Navigate to="/manager/login" state={{ from: location }} replace />
+    }
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
@@ -34,7 +41,14 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   if (roles) {
     const isAuthorized = roles.some((role) => {
       if (role === 'ADMIN') return userRoles.includes('ADMIN')
-      if (role === 'CANTEEN_MEMBER') return userRoles.includes('CANTEEN_MEMBER') || userRoles.includes('ADMIN')
+      if (role === 'MANAGER' || role === 'CANTEEN_MEMBER' || role === 'STORE_STAFF') {
+        return (
+          userRoles.includes('MANAGER') ||
+          userRoles.includes('CANTEEN_MEMBER') ||
+          userRoles.includes('STORE_STAFF') ||
+          userRoles.includes('ADMIN')
+        )
+      }
       return userRoles.includes(role)
     })
 

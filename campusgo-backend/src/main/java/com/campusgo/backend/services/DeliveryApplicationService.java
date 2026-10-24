@@ -5,6 +5,7 @@ import com.campusgo.backend.payload.request.DeliveryApplicationRequest;
 import com.campusgo.backend.payload.response.DeliveryApplicationResponse;
 import com.campusgo.backend.repositories.DeliveryAgentRepository;
 import com.campusgo.backend.repositories.DeliveryApplicationRepository;
+import com.campusgo.backend.repositories.DeliveryPartnerDailyFeeRepository;
 import com.campusgo.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,6 +27,7 @@ public class DeliveryApplicationService {
     private final DeliveryApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final DeliveryAgentRepository deliveryAgentRepository;
+    private final DeliveryPartnerDailyFeeRepository dailyFeeRepository;
 
     @Transactional
     public DeliveryApplicationResponse submitApplication(User user, DeliveryApplicationRequest request) {
@@ -93,11 +97,31 @@ public class DeliveryApplicationService {
         return mapToResponse(saved);
     }
 
+    @Transactional
     public Optional<DeliveryApplicationResponse> getMyStatus(Long userId) {
         User user = userRepository.findById(userId).orElse(null);
         Optional<DeliveryPartnerApplication> appOpt = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
         if (appOpt.isPresent()) {
             DeliveryPartnerApplication app = appOpt.get();
+            if (user != null && app.getStatus() == ApplicationStatus.APPROVED) {
+                // Keep the account's delivery access in sync with an approved application,
+                // including applications approved before role synchronization was added.
+                if (!user.hasRole(Role.DELIVERY_PARTNER)) {
+                    user.addRole(Role.DELIVERY_PARTNER);
+                    userRepository.save(user);
+                }
+                DeliveryAgent agent = deliveryAgentRepository.findByUserId(userId)
+                        .orElseGet(() -> DeliveryAgent.builder().user(user).build());
+                if (!"SUSPENDED".equalsIgnoreCase(agent.getPartnerStatus())) {
+                    LocalDate campusToday = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+                    boolean paidToday = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(userId, campusToday)
+                            .map(fee -> "PAID".equalsIgnoreCase(fee.getStatus()))
+                            .orElse(false);
+                    agent.setPartnerStatus(paidToday ? "ACTIVE" : "INACTIVE");
+                }
+                if (agent.getAvailabilityStatus() == null) agent.setAvailabilityStatus("AVAILABLE");
+                deliveryAgentRepository.save(agent);
+            }
             if (user != null && user.hasRole(Role.DELIVERY_PARTNER) && app.getStatus() != ApplicationStatus.APPROVED) {
                 app.setStatus(ApplicationStatus.APPROVED);
                 app.setReviewedAt(LocalDateTime.now());
@@ -153,10 +177,12 @@ public class DeliveryApplicationService {
         applicant.addRole(Role.DELIVERY_PARTNER);
         userRepository.save(applicant);
 
-        // Ensure DeliveryAgent entry exists with ACTIVE status
+        // Admin approval grants partner access, but daily bidding activation requires today's pass.
         DeliveryAgent agent = deliveryAgentRepository.findByUserId(applicant.getId())
-                .orElseGet(() -> DeliveryAgent.builder().user(applicant).build());
-        agent.setPartnerStatus("ACTIVE");
+                .orElseGet(() -> DeliveryAgent.builder().user(applicant).partnerStatus("INACTIVE").build());
+        if (!"SUSPENDED".equalsIgnoreCase(agent.getPartnerStatus())) {
+            agent.setPartnerStatus("INACTIVE");
+        }
         agent.setAvailabilityStatus("AVAILABLE");
         deliveryAgentRepository.save(agent);
 

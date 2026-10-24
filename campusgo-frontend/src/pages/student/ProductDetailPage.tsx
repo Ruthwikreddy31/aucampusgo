@@ -193,7 +193,7 @@ export default function ProductDetailPage() {
             </p>
 
             <p className="mt-4 text-base font-medium leading-7 text-[var(--color-text-muted)]">
-              {product.description || `${product.name} is a fresh campus favorite prepared daily for fast delivery across Anurag University Campus.`}
+              {product.description || `${product.name} is a fresh campus favorite prepared daily for fast delivery across Maheshwaram, Narsampet, Warangal.`}
             </p>
           </div>
 

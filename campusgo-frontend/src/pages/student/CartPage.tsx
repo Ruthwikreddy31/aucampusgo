@@ -27,10 +27,11 @@ import { toast } from 'sonner'
 
 export default function CartPage() {
   const navigate = useNavigate()
-  const { user, openLoginModal } = useAuthStore()
+  const { user, initialized, openLoginModal } = useAuthStore()
   const { items, loading, fetchCart, updateItem, removeItem, clearCart, addItem, subtotal, itemCount } = useCartStore()
 
   const [selectedLocation, setSelectedLocation] = useState<string>(DELIVERY_LOCATIONS[0] || 'Main Block')
+  const [customerPhone, setCustomerPhone] = useState('')
   const [customRoom, setCustomRoom] = useState('')
   const [deliveryInstructions, setDeliveryInstructions] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'RAZORPAY'>('CASH_ON_DELIVERY')
@@ -47,15 +48,22 @@ export default function CartPage() {
   const [, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
   useEffect(() => {
+    // Auth restoration is asynchronous.  Do not show a login prompt during the
+    // short interval between a refresh and restoring the saved session.
+    if (!initialized) return
+
     fetchCart()
     loadSuggestedProducts()
+    if (user?.phone && user.phone !== 'Hidden' && /^(?:\+?91)?[6-9]\d{9}$/.test(user.phone.replace(/[\s()-]/g, ''))) {
+      setCustomerPhone(user.phone)
+    }
     if (!user) {
       toast.info('Please sign in with your college email to access your cart')
       openLoginModal(() => {
         fetchCart()
       })
     }
-  }, [user, openLoginModal, fetchCart])
+  }, [initialized, user, openLoginModal, fetchCart])
 
   const loadSuggestedProducts = async () => {
     setLoadingSuggestions(true)
@@ -108,6 +116,12 @@ export default function CartPage() {
 
     if (!selectedLocation) {
       toast.error('Please select a campus delivery location')
+      return
+    }
+
+    const normalizedPhone = customerPhone.replace(/[\s()-]/g, '')
+    if (!/^(?:\+?91)?[6-9]\d{9}$/.test(normalizedPhone)) {
+      toast.error('Enter a valid 10-digit mobile number so the courier can contact you.')
       return
     }
 
@@ -182,6 +196,8 @@ export default function CartPage() {
         : selectedLocation
 
       const order = await orderService.placeOrder({
+        customerName: user?.name,
+        customerPhone,
         deliveryLocation: fullLocation,
         deliveryInstructions: deliveryInstructions.trim() || undefined,
         paymentMethod,
@@ -204,7 +220,7 @@ export default function CartPage() {
     }
   }
 
-  if (loading && items.length === 0) {
+  if (!initialized || (loading && items.length === 0)) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <LoadingSpinner message="Loading your cart..." />
@@ -342,7 +358,7 @@ export default function CartPage() {
                 📍 You're Outside Campus
               </h2>
               <p className="text-xs sm:text-sm text-red-800 font-medium leading-relaxed">
-                CampusGo orders can only be placed while you are inside the Anurag University delivery area.
+                CampusGo orders can only be placed while you are inside the Maheshwaram, Narsampet, Warangal delivery area.
                 You are currently approximately <span className="font-bold">{Math.round(outsideCampusError.distanceMeters)}m</span> away.
               </p>
             </div>
@@ -525,6 +541,24 @@ export default function CartPage() {
                   </button>
                 )
               })}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1" htmlFor="cart-customer-phone">
+                Contact Mobile Number
+              </label>
+              <input
+                id="cart-customer-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                required
+                className="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-[var(--color-text)] placeholder-[var(--color-text-subtle)] outline-none focus:border-[var(--color-primary)]"
+              />
+              <p className="mt-1 text-[11px] text-[var(--color-text-subtle)]">Required for the kitchen and delivery partner to coordinate your order.</p>
             </div>
 
             {/* Room / Landmark */}

@@ -1,7 +1,7 @@
 import api from './api'
-import type { Order, OrderStatus, PlaceOrderRequest, User } from '../models'
-import { DELIVERY_FEE, CAMPUS_LATITUDE, CAMPUS_LONGITUDE, CAMPUS_NAME, CAMPUS_RADIUS_METERS, USER_KEY } from '../utils/constants'
-import { mockProducts, mockShops } from '../utils/mockData'
+import type { Order, OrderStatus, PlaceOrderRequest } from '../models'
+import { DELIVERY_FEE, CAMPUS_LATITUDE, CAMPUS_LONGITUDE, CAMPUS_NAME, CAMPUS_RADIUS_METERS } from '../utils/constants'
+import { mockProducts } from '../utils/mockData'
 
 const LOCAL_ORDERS_KEY = 'campusgo_orders'
 
@@ -143,111 +143,20 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const orderService = {
   async placeOrder(payload: PlaceOrderRequest): Promise<Order> {
+    const { data } = await api.post<Order>('/api/orders', payload)
+    // Cache only server-confirmed orders; local-only orders never reach the kitchen queue.
     try {
-      const { data } = await api.post<Order>('/api/orders', payload)
-      // Also cache to local orders
-      const orders = getStoredOrders()
-      saveStoredOrders([data, ...orders.filter((o) => o.id !== data.id)])
-      return data
-    } catch (err) {
-      console.warn('Backend order API call failed, generating local verified order:', err)
-
-      // Get current logged in user if available
-      let currentUser: User | undefined
-      try {
-        const raw = localStorage.getItem(USER_KEY)
-        if (raw) currentUser = JSON.parse(raw)
-      } catch {}
-
-      const now = new Date()
-      const orderId = Math.floor(Date.now() / 1000)
-      const orderNumber = `CG-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-
-      // Map request items with product info
-      const orderItems = payload.items.map((item, idx) => {
-        const product = mockProducts.find((p) => p.id === item.productId)
-        const price = product?.price || 50
-        return {
-          id: orderId + idx + 1,
-          orderId,
-          productId: item.productId,
-          productName: product?.name || `Product #${item.productId}`,
-          price,
-          quantity: item.quantity,
-          product: product || {
-            id: item.productId,
-            name: `Product #${item.productId}`,
-            price,
-            shopId: 1,
-            categoryId: 1,
-            description: '',
-            imageUrl: '',
-            available: true,
-            active: true,
-            createdAt: now.toISOString(),
-            updatedAt: now.toISOString(),
-          },
-        }
-      })
-
-      const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-      const totalAmount = subtotal + DELIVERY_FEE
-      const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString()
-
-      const newOrder: Order = {
-        id: orderId,
-        orderNumber,
-        userId: currentUser?.id || 1,
-        shopId: orderItems[0]?.product?.shopId || 1,
-        deliveryFee: DELIVERY_FEE,
-        subtotal,
-        totalAmount,
-        customerName: payload.customerName || currentUser?.name || 'Student',
-        customerPhone: payload.customerPhone || currentUser?.phone || '+91 98491 88776',
-        deliveryLocation: payload.deliveryLocation,
-        deliveryInstructions: payload.deliveryInstructions,
-        deliveryDeadline: payload.deliveryDeadline || (payload.deadlineMinutes ? `${payload.deadlineMinutes} Mins` : '15 Mins'),
-        deadlineMinutes: payload.deadlineMinutes || 15,
-        latitude: payload.latitude || CAMPUS_LATITUDE,
-        longitude: payload.longitude || CAMPUS_LONGITUDE,
-        deliveryLatitude: payload.latitude || CAMPUS_LATITUDE,
-        deliveryLongitude: payload.longitude || CAMPUS_LONGITUDE,
-        deliveryOtp,
-        deliveryOtpVerified: false,
-        paymentMethod: payload.paymentMethod,
-        paymentStatus: payload.paymentMethod === 'RAZORPAY' ? 'PAID' : 'PENDING',
-        orderStatus: 'PLACED',
-        items: orderItems,
-        shop: mockShops[0],
-        user: currentUser,
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      }
-
       const existingOrders = getStoredOrders()
-      saveStoredOrders([newOrder, ...existingOrders])
-      return newOrder
+      saveStoredOrders([data, ...existingOrders.filter((o) => o.id !== data.id)])
+    } catch {
+      // The API response is authoritative; a cache failure must not undo a placed order.
     }
+    return data
   },
 
   async getMyOrders(): Promise<Order[]> {
-    try {
-      const { data } = await api.get<Order[]>('/api/orders')
-      if (Array.isArray(data) && data.length > 0) {
-        // Merge with local orders
-        const local = getStoredOrders()
-        const merged = [...data]
-        for (const loc of local) {
-          if (!merged.some((m) => m.id === loc.id)) {
-            merged.push(loc)
-          }
-        }
-        return merged
-      }
-      return getStoredOrders()
-    } catch {
-      return getStoredOrders()
-    }
+    const { data } = await api.get<Order[]>('/api/orders')
+    return Array.isArray(data) ? data : []
   },
 
   async getById(id: number | string): Promise<Order> {

@@ -18,9 +18,11 @@ import {
   Info,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { toast } from 'sonner'
 import { deliveryApplicationService } from '../../services/deliveryApplicationService'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import type { DeliveryPartnerApplication } from '../../models'
+import { hasRole } from '../../utils/roles'
 
 export default function DeliveryApplicationStatusPage() {
   const { user, refreshUser } = useAuthStore()
@@ -28,6 +30,7 @@ export default function DeliveryApplicationStatusPage() {
   const [application, setApplication] = useState<DeliveryPartnerApplication | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [openingDashboard, setOpeningDashboard] = useState(false)
 
   const fetchStatus = useCallback(async (isManualRefresh = false, isBackground = false) => {
     if (isManualRefresh) setRefreshing(true)
@@ -48,6 +51,21 @@ export default function DeliveryApplicationStatusPage() {
       if (isManualRefresh) setRefreshing(false)
     }
   }, [refreshUser])
+
+  const handleOpenDashboard = async () => {
+    setOpeningDashboard(true)
+    try {
+      await fetchStatus(true)
+      const freshUser = await refreshUser()
+      if (hasRole(freshUser, 'DELIVERY_PARTNER')) {
+        navigate('/delivery', { replace: true })
+      } else {
+        toast.error('Partner access is approved but has not synced yet. Please refresh and try again.')
+      }
+    } finally {
+      setOpeningDashboard(false)
+    }
+  }
 
   useEffect(() => {
     if (!user) {
@@ -189,7 +207,7 @@ export default function DeliveryApplicationStatusPage() {
                   <Bike size={15} /> Zone
                 </div>
                 <p className="mt-1 text-base font-black text-emerald-950">Campus Only</p>
-                <p className="text-[11px] font-semibold text-emerald-700">Anurag University</p>
+                <p className="text-[11px] font-semibold text-emerald-700">Maheshwaram, Narsampet, Warangal</p>
               </div>
 
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5">
@@ -203,16 +221,18 @@ export default function DeliveryApplicationStatusPage() {
 
             {/* Main Action Button */}
             <div className="mt-8">
-              <Link
-                to="/delivery"
-                className="btn-primary inline-flex items-center justify-center gap-3 px-8 py-4 text-base font-extrabold shadow-lg shadow-emerald-500/20 w-full sm:w-auto"
+              <button
+                type="button"
+                onClick={handleOpenDashboard}
+                disabled={openingDashboard}
+                className="btn-primary inline-flex items-center justify-center gap-3 px-8 py-4 text-base font-extrabold shadow-lg shadow-emerald-500/20 w-full sm:w-auto disabled:cursor-wait disabled:opacity-70"
               >
-                <Bike size={20} />
-                <span>Go to Delivery Dashboard</span>
+                {openingDashboard ? <RefreshCw size={18} className="animate-spin" /> : <Bike size={20} />}
+                <span>{openingDashboard ? 'Syncing partner access...' : 'Go to Delivery Dashboard'}</span>
                 <ChevronRight size={18} />
-              </Link>
+              </button>
               <p className="mt-2 text-xs font-semibold text-emerald-700">
-                Switch to Delivery Partner mode to view available pickup orders
+                Your approved partner access will sync before the dashboard opens.
               </p>
             </div>
           </div>
@@ -249,7 +269,7 @@ export default function DeliveryApplicationStatusPage() {
                 "{rejectionReason || 'The submitted student ID card or timetable documents were unclear or could not be verified with college records.'}"
               </p>
               <p className="text-xs font-semibold text-red-700 pt-1">
-                💡 <span className="font-bold">Next Steps:</span> Please re-upload clearer photos of your valid Anurag University ID card and current class timetable to get approved.
+                💡 <span className="font-bold">Next Steps:</span> Please re-upload clearer photos of your valid college ID card and current class timetable to get approved.
               </p>
             </div>
 

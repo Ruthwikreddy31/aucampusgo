@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -30,6 +31,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderController {
+
+    private static final ZoneId CAMPUS_ZONE = ZoneId.of("Asia/Kolkata");
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -43,22 +46,30 @@ public class OrderController {
     private final ReviewRepository reviewRepository;
     private final ApplicationContext applicationContext;
 
-    @Value("${app.campus.latitude:17.4018}")
+    @Value("${app.campus.latitude:17.92119444}")
     private double defaultCampusLat;
 
-    @Value("${app.campus.longitude:78.5602}")
+    @Value("${app.campus.longitude:79.85761111}")
     private double defaultCampusLng;
 
     @Value("${app.campus.radius-meters:15000.0}")
     private double defaultCampusRadiusMeters;
 
-    @Value("${app.campus.name:Anurag University - Uppal Delivery Zone}")
+    @Value("${app.campus.name:Maheshwaram, Narsampet, Warangal}")
     private String defaultCampusName;
 
     private double getCampusLat() {
         return campusSettingRepository.findBySettingKey("campus.latitude")
                 .map(s -> {
-                    try { return Double.parseDouble(s.getSettingValue().trim()); }
+                    try {
+                        double configuredLatitude = Double.parseDouble(s.getSettingValue().trim());
+                        // A deployed database can still contain the retired Uppal center.
+                        // Do not make customers appear 150 km away while the settings
+                        // migration is waiting for the next seeded startup.
+                        return Math.abs(configuredLatitude - 17.4018) < 0.00001
+                                ? defaultCampusLat
+                                : configuredLatitude;
+                    }
                     catch (Exception e) { return defaultCampusLat; }
                 }).orElse(defaultCampusLat);
     }
@@ -66,7 +77,12 @@ public class OrderController {
     private double getCampusLng() {
         return campusSettingRepository.findBySettingKey("campus.longitude")
                 .map(s -> {
-                    try { return Double.parseDouble(s.getSettingValue().trim()); }
+                    try {
+                        double configuredLongitude = Double.parseDouble(s.getSettingValue().trim());
+                        return Math.abs(configuredLongitude - 78.5602) < 0.00001
+                                ? defaultCampusLng
+                                : configuredLongitude;
+                    }
                     catch (Exception e) { return defaultCampusLng; }
                 }).orElse(defaultCampusLng);
     }
@@ -88,7 +104,7 @@ public class OrderController {
     private String getCampusName() {
         return campusSettingRepository.findBySettingKey("campus_name")
                 .map(CampusSetting::getSettingValue)
-                .filter(val -> val != null && !val.isBlank())
+                .filter(val -> val != null && !val.isBlank() && !val.contains("Anurag University"))
                 .orElse(defaultCampusName);
     }
 
@@ -207,7 +223,7 @@ public class OrderController {
         String orderNumber = "CG-" + Year.now().getValue() + "-" + randomSuffix;
 
         int deadlineMinutes = request.getDeadlineMinutes() != null ? request.getDeadlineMinutes() : 5;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         LocalDateTime deadlineAt = now.plusMinutes(deadlineMinutes);
 
         String deliveryDeadline = request.getDeliveryDeadline() != null && !request.getDeliveryDeadline().trim().isEmpty()
@@ -305,12 +321,10 @@ public class OrderController {
         Order saved = orderRepository.save(order);
         biddingService.recordStatusHistory(saved.getId(), null, OrderStatus.PLACED.name(), user.getName(), "Order placed");
 
-        // PROCESS 2: Immediately open delivery request for bidding by verified delivery partners in parallel
-        try {
-            biddingService.createDeliveryRequest(saved, deadlineMinutes);
-        } catch (Exception e) {
-            log.error("Failed to create parallel delivery request for order {}: {}", saved.getOrderNumber(), e.getMessage());
-        }
+        // PROCESS 2: Persist the delivery request as part of order placement. If this
+        // fails, let the transaction roll back instead of returning a successful order
+        // that has no request for delivery partners to see.
+        biddingService.createDeliveryRequest(saved, deadlineMinutes);
 
         // PROCESS 1: Immediately identify correct Kitchen Manager based on the shop and send order to them
         if (orderShop != null && orderShop.getManagerUserId() != null) {
@@ -394,7 +408,7 @@ public class OrderController {
             return ResponseEntity.status(403).body(Map.of("message", "Access denied"));
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(CAMPUS_ZONE);
         
         long remainingSeconds = 0;
         String deadlineStatus = "On Time";
@@ -579,7 +593,7 @@ public class OrderController {
         }
 
         String oldStatus = order.getOrderStatus().name();
-        order.setPickupVerifiedAt(LocalDateTime.now());
+        order.setPickupVerifiedAt(LocalDateTime.now(CAMPUS_ZONE));
         order.setOrderStatus(OrderStatus.PICKED_UP);
         order.setDeliveryStatus("PICKED_UP");
         Order updated = orderRepository.save(order);

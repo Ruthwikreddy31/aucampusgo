@@ -240,7 +240,9 @@ public class ManagerController {
             if (updated.getDeliveryAgent() != null && updated.getDeliveryAgent().getUser() != null) {
                 notificationService.notifyUser(updated.getDeliveryAgent().getUser().getId(), updated.getId(),
                         "Order ready for pickup", "Order " + updated.getOrderNumber() + " is prepared and ready for pickup at the counter.", "ORDER_READY");
-            } else {
+            } else if (updated.getSelectedDeliveryPartnerId() == null) {
+                // Do not reopen a completed customer selection while that courier is
+                // still deciding whether to accept the assignment.
                 biddingService.createDeliveryRequest(updated, updated.getDeadlineMinutes());
             }
             notificationService.notifyUser(updated.getUser().getId(), updated.getId(),

@@ -39,6 +39,7 @@ export default function DeliveryOrdersPage() {
   const [pickupRequestOrders, setPickupRequestOrders] = useState<Order[]>([])
   const [pendingConfirmations, setPendingConfirmations] = useState<PendingConfirmation[]>([])
   const [loading, setLoading] = useState(true)
+  const [feedError, setFeedError] = useState<string | null>(null)
   const [earningPerDelivery, setEarningPerDelivery] = useState<number | null>(null)
   const [bidAmounts, setBidAmounts] = useState<Record<number, number>>({})
   const [deliveryTimes, setDeliveryTimes] = useState<Record<number, number>>({})
@@ -71,6 +72,7 @@ export default function DeliveryOrdersPage() {
       }
 
       setAvailableOrders(avail)
+      setFeedError(null)
       setEarningPerDelivery(stats?.earningPerDelivery ?? null)
       setPendingConfirmations(pendingAssignments)
 
@@ -112,19 +114,25 @@ export default function DeliveryOrdersPage() {
         else if (pickupRequests.length > 0) setActiveTab('PICKUP_REQUESTS')
         else if (avail.length > 0) setActiveTab('OPEN_BIDS')
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load delivery data:', err)
+      setFeedError(err?.message || 'Could not load delivery tasks. Please try again.')
     } finally {
       if (isInitial) setLoading(false)
     }
   }
 
-  // Bidding countdown timer
+  // Bidding countdown timer — skip ticking for orders where bid is already placed
   useEffect(() => {
     if (availableOrders.length === 0) return
     const tick = () => {
       const updated: Record<number, { mins: number; secs: number; expired: boolean }> = {}
       availableOrders.forEach((o) => {
+        // If bid already submitted for this order, freeze the timer
+        if (submittedBids[o.id]) {
+          updated[o.id] = { mins: 0, secs: 0, expired: false }
+          return
+        }
         const deadline = o.biddingDeadline || o.deadlineAt
         if (!deadline) {
           updated[o.id] = { mins: 0, secs: 0, expired: false }
@@ -146,7 +154,7 @@ export default function DeliveryOrdersPage() {
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [availableOrders])
+  }, [availableOrders, submittedBids])
 
   useEffect(() => {
     fetchAll(true)
@@ -252,6 +260,13 @@ export default function DeliveryOrdersPage() {
           <span>Refresh</span>
         </button>
       </div>
+
+      {feedError && (
+        <div role="alert" className="rounded-2xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-xs text-amber-200">
+          <p className="font-black text-amber-300">Delivery requests are unavailable for this account</p>
+          <p className="mt-1">{feedError} Sign in with an Admin-approved delivery partner account whose status is ACTIVE.</p>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="grid grid-cols-4 rounded-2xl bg-slate-900/90 p-1.5 border border-slate-800 gap-1">
@@ -396,10 +411,12 @@ export default function DeliveryOrdersPage() {
                         <span className="text-emerald-400 font-bold">{order.deadlineMinutes || 5} min deadline</span>
                       </p>
                     </div>
-                    {/* Bidding countdown */}
+                    {/* Bidding countdown — frozen when bid is placed */}
                     <div className={`text-right ${isExpired ? 'opacity-50' : ''}`}>
                       <span className="text-[10px] uppercase font-bold text-slate-400 block">Bid Window</span>
-                      {countdown && !countdown.expired ? (
+                      {alreadyBid ? (
+                        <p className="text-xs font-bold text-emerald-400">✓ Bid Locked</p>
+                      ) : countdown && !countdown.expired ? (
                         <p className={`text-base font-black ${countdown.mins === 0 && countdown.secs < 30 ? 'text-red-400 animate-pulse' : 'text-amber-400'}`}>
                           {countdown.mins}:{String(countdown.secs).padStart(2, '0')}
                         </p>

@@ -77,12 +77,15 @@ public class SecurityConfig {
                                 .preload(true)
                                 .maxAgeInSeconds(31536000))
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
-                        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", "geolocation=(), microphone=(), camera=()"))
+                        // Checkout relies on browser GPS. Keep it available to this app while
+                        // retaining the microphone and camera restrictions.
+                        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", "geolocation=(self), microphone=(), camera=()"))
                         .addHeaderWriter(new StaticHeadersWriter("X-Content-Type-Options", "nosniff")))
                 .authorizeHttpRequests(auth -> 
                     auth.requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/shops/**", "/api/products/**", "/api/categories/**").permitAll()
                         .requestMatchers("/api/print/settings", "/api/print/quote").permitAll()
+                        .requestMatchers("/api/delivery/proof/**").permitAll()
                         .requestMatchers("/ws/**", "/ws-raw/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

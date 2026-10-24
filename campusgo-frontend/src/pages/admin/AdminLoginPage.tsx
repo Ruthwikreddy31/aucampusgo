@@ -33,9 +33,12 @@ export default function AdminLoginPage() {
     try {
       await login(email.trim(), password)
       const currentUser = useAuthStore.getState().user
-      if (hasRole(currentUser, 'ADMIN') || hasRole(currentUser, 'MANAGER') || hasRole(currentUser, 'CANTEEN_MEMBER')) {
+      if (hasRole(currentUser, 'ADMIN')) {
         toast.success('Welcome to CampusGo Admin Portal')
         navigate('/admin', { replace: true })
+      } else if (hasRole(currentUser, 'MANAGER') || hasRole(currentUser, 'CANTEEN_MEMBER')) {
+        toast.info('Manager account detected. Redirecting to Manager Portal...')
+        navigate('/manager', { replace: true })
       } else {
         setError('Access denied. This account does not possess administrator privileges.')
         toast.error('Unauthorized: Admin account required')
@@ -69,9 +72,12 @@ export default function AdminLoginPage() {
     try {
       await verifyOtp(email.trim(), otp.trim())
       const currentUser = useAuthStore.getState().user
-      if (hasRole(currentUser, 'ADMIN') || hasRole(currentUser, 'MANAGER') || hasRole(currentUser, 'CANTEEN_MEMBER')) {
+      if (hasRole(currentUser, 'ADMIN')) {
         toast.success('Welcome to CampusGo Admin Portal')
         navigate('/admin', { replace: true })
+      } else if (hasRole(currentUser, 'MANAGER') || hasRole(currentUser, 'CANTEEN_MEMBER')) {
+        toast.info('Manager account detected. Redirecting to Manager Portal...')
+        navigate('/manager', { replace: true })
       } else {
         setError('Access denied. This account does not possess administrator privileges.')
         toast.error('Unauthorized: Admin account required')
@@ -212,10 +218,13 @@ export default function AdminLoginPage() {
 
         </div>
 
-        {/* Back to student site link */}
-        <div className="mt-6 text-center">
-          <Link to="/home" className="text-xs font-bold text-slate-400 hover:text-white transition">
-            &larr; Return to CampusGo Student Portal
+        {/* Cross Portal Links */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 px-2">
+          <Link to="/login" className="hover:text-indigo-300 font-semibold transition flex items-center gap-1">
+            ← All Portals
+          </Link>
+          <Link to="/manager/login" className="hover:text-indigo-300 font-semibold transition flex items-center gap-1">
+            <span>🏪 Manager Portal →</span>
           </Link>
         </div>
       </div>

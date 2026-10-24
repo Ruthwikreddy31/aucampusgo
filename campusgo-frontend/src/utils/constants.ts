@@ -5,15 +5,17 @@ export const APP_NAME = 'CampusGo'
 export const APP_VERSION = '1.0.0'
 
 // ─── Campus Config ────────────────────────────────────────────────────────────
-export const CAMPUS_NAME = 'Anurag University'
-export const CAMPUS_LATITUDE = Number(import.meta.env.VITE_CAMPUS_LATITUDE ?? 17.4018)
-export const CAMPUS_LONGITUDE = Number(import.meta.env.VITE_CAMPUS_LONGITUDE ?? 78.5602)
+export const CAMPUS_NAME = 'Maheshwaram, Narsampet, Warangal'
+// 17°55'16.3"N, 79°51'27.4"E (Maheshwaram, Narsampet, Warangal)
+export const CAMPUS_LATITUDE = Number(import.meta.env.VITE_CAMPUS_LATITUDE ?? 17.92119444)
+export const CAMPUS_LONGITUDE = Number(import.meta.env.VITE_CAMPUS_LONGITUDE ?? 79.85761111)
 export const CAMPUS_RADIUS_METERS = Number(import.meta.env.VITE_CAMPUS_RADIUS_METERS ?? 15000)
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const TOKEN_KEY = 'campusgo_token'
 export const USER_KEY = 'campusgo_user'
-export const COLLEGE_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]*\.(edu|ac\.in|edu\.in)|anurag\.edu\.in|campusgo\.com)$/i
+export const COLLEGE_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i
+export const VALID_EMAIL_REGEX = COLLEGE_EMAIL_REGEX
 
 // ─── Delivery Fee ─────────────────────────────────────────────────────────────
 export const DELIVERY_FEE = 10
