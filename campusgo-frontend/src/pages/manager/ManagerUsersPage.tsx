@@ -33,7 +33,7 @@ export default function ManagerUsersPage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader title="Users" subtitle={`${users.length} total`} />
-      <div className="px-4 pt-3 pb-8 space-y-3 max-w-3xl mx-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-12 space-y-4 max-w-7xl mx-auto">
         {/* Filters */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" />
@@ -60,25 +60,30 @@ export default function ManagerUsersPage() {
 
         {loading ? (
           <div className="flex justify-center py-10"><LoadingSpinner /></div>
-        ) : filtered.map((user) => {
-          const displayRole = primaryRoleLabel(user)
-          return (
-          <div key={user.id} className="card p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white font-bold flex-shrink-0">
-              {user.name?.[0]?.toUpperCase() ?? '?'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-[var(--color-text)] truncate">{user.name}</p>
-              <p className="text-xs text-[var(--color-text-subtle)] truncate">{user.email}</p>
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className={`badge ${roleBadge[displayRole] ?? 'badge-primary'}`}>{getUserRoles(user).join(', ')}</span>
-              <span className={`badge ${user.active ? 'badge-success' : 'badge-danger'}`}>
-                {user.active ? 'Active' : 'Inactive'}
-              </span>
-            </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {filtered.map((user) => {
+              const displayRole = primaryRoleLabel(user)
+              return (
+                <div key={user.id} className="card p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {user.name?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-[var(--color-text)] truncate">{user.name}</p>
+                    <p className="text-xs text-[var(--color-text-subtle)] truncate">{user.email}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`badge ${roleBadge[displayRole] ?? 'badge-primary'}`}>{getUserRoles(user).join(', ')}</span>
+                    <span className={`badge ${user.active ? 'badge-success' : 'badge-danger'}`}>
+                      {user.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        )})}
+        )}
       </div>
     </div>
   )

@@ -35,16 +35,16 @@ export default function DeliveryHistoryPage() {
   const totalEarnings = earningPerDelivery == null ? null : orders.length * earningPerDelivery
 
   return (
-    <div className="page-enter max-w-2xl mx-auto pb-24 space-y-5 text-slate-100">
+    <div className="page-enter max-w-5xl mx-auto pb-24 md:pb-12 space-y-6 text-slate-100">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-black text-white">Delivery History</h1>
           <p className="text-xs text-slate-400 font-semibold">{orders.length} completed on-campus runs</p>
         </div>
         <button
           onClick={fetchHistory}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           <span>Refresh</span>
@@ -68,13 +68,13 @@ export default function DeliveryHistoryPage() {
       </div>
 
       {/* Orders List */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="col-span-full flex justify-center py-12">
             <LoadingSpinner message="Loading delivery log..." />
           </div>
         ) : orders.length === 0 ? (
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-10 text-center space-y-3 text-slate-400">
+          <div className="col-span-full rounded-3xl border border-slate-800 bg-slate-900/40 p-10 text-center space-y-3 text-slate-400">
             <CheckCircle2 size={40} className="text-slate-600 mx-auto" />
             <h2 className="text-base font-extrabold text-white">No Completed Deliveries Yet</h2>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">

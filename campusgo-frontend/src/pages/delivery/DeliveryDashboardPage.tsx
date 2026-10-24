@@ -6,7 +6,7 @@ import type { Order, DeliveryPartnerDailyFee, DeliveryPartnerWallet } from '../.
 import OrderStatusBadge from '../../components/OrderStatusBadge'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import { useAuthStore } from '../../store/authStore'
-import { Bike, CheckCircle, Clock, ChevronRight, MapPin, IndianRupee, Sparkles, ArrowRight, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
+import { Bike, CheckCircle, Clock, ChevronRight, MapPin, IndianRupee, Sparkles, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function DeliveryDashboardPage() {
@@ -192,80 +192,65 @@ export default function DeliveryDashboardPage() {
         ))}
       </div>
 
-      {/* Courier Wallet & Financial Ledger */}
-      {wallet && (
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-emerald-400 font-extrabold text-sm">
-              <Wallet size={18} />
-              <span>Courier Wallet & Financial Ledger</span>
+      {/* 2-Column Desktop Grid for Financials and Active Runs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Courier Wallet & Financial Ledger */}
+        {wallet ? (
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 font-extrabold text-sm">
+                <Wallet size={18} />
+                <span>Courier Wallet & Financial Ledger</span>
+              </div>
+              <span className="font-mono text-xs font-bold text-slate-400">
+                Balance: <span className="text-emerald-400 font-black text-sm">₹{wallet.balance}</span>
+              </span>
             </div>
-            <span className="font-mono text-xs font-bold text-slate-400">
-              Balance: <span className="text-emerald-400 font-black text-sm">₹{wallet.balance}</span>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Recent Transactions</p>
+              <div className="divide-y divide-slate-800 text-xs">
+                {wallet.transactions.slice(0, 4).map((tx) => (
+                  <div key={tx.id} className="py-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      {tx.amount > 0 ? (
+                        <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                          <ArrowDownLeft size={14} />
+                        </span>
+                      ) : (
+                        <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                          <ArrowUpRight size={14} />
+                        </span>
+                      )}
+                      <div>
+                        <p className="font-bold text-slate-200">{tx.description}</p>
+                        <p className="text-[10px] text-slate-500">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                    </div>
+                    <span className={`font-black ${tx.amount > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {tx.amount > 0 ? `+₹${tx.amount}` : `-₹${Math.abs(tx.amount)}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 text-center text-slate-400">
+            <Wallet size={32} className="mx-auto mb-2 text-slate-600" />
+            <p className="text-sm font-bold text-slate-300">Wallet ledger</p>
+            <p className="text-xs text-slate-500 mt-1">Earnings and fees record</p>
+          </div>
+        )}
+
+        {/* Active Deliveries List */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-white">Active Runs in Progress</h2>
+            <span className="rounded-full bg-slate-800 border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">
+              {activeOrders.length} Active
             </span>
           </div>
-
-          <div className="space-y-2">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Recent Transactions</p>
-            <div className="divide-y divide-slate-800 text-xs">
-              {wallet.transactions.slice(0, 3).map((tx) => (
-                <div key={tx.id} className="py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {tx.amount > 0 ? (
-                      <span className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400">
-                        <ArrowDownLeft size={13} />
-                      </span>
-                    ) : (
-                      <span className="p-1 rounded-lg bg-amber-500/20 text-amber-400">
-                        <ArrowUpRight size={13} />
-                      </span>
-                    )}
-                    <div>
-                      <p className="font-bold text-slate-200">{tx.description}</p>
-                      <p className="text-[10px] text-slate-500">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
-                  </div>
-                  <span className={`font-black ${tx.amount > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {tx.amount > 0 ? `+₹${tx.amount}` : `-₹${Math.abs(tx.amount)}`}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Available Orders Shortcut Banner if any */}
-      {availableCount > 0 && (
-        <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 to-emerald-500/10 p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-amber-500 text-white font-black shadow-md">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold text-white">{availableCount} New Orders Ready for Pickup!</p>
-              <p className="text-xs text-slate-300">
-                Claim deliveries to start earning ₹{stats?.earningPerDelivery ?? 'configured payout'}/order.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/delivery/orders"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition shrink-0"
-          >
-            Claim Orders <ArrowRight size={14} />
-          </Link>
-        </div>
-      )}
-
-      {/* Active Deliveries List */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-extrabold text-white">Active Runs in Progress</h2>
-          <span className="rounded-full bg-slate-800 border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">
-            {activeOrders.length} Active
-          </span>
-        </div>
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -310,6 +295,7 @@ export default function DeliveryDashboardPage() {
             )
           })
         )}
+        </div>
       </div>
     </div>
   )

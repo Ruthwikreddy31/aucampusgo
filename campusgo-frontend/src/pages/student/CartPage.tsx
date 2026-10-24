@@ -345,7 +345,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="page-enter max-w-3xl mx-auto pb-24 space-y-6">
+    <div className="page-enter max-w-5xl mx-auto pb-24 md:pb-12 space-y-6">
       {/* Outside Campus Modal Alert */}
       {outsideCampusError && (
         <div className="rounded-[28px] border-2 border-red-500/30 bg-red-50 p-6 sm:p-7 shadow-xl space-y-4">

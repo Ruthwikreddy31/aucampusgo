@@ -22,7 +22,7 @@ export default function DeliveryProfilePage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader title="Profile" />
-      <div className="px-4 pt-3 pb-8 space-y-5 max-w-lg mx-auto">
+      <div className="px-4 pt-4 pb-12 space-y-6 max-w-2xl mx-auto">
         <div className="flex flex-col items-center gap-3 py-4">
           <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center text-3xl font-black text-white">
             {user.name?.[0]?.toUpperCase() ?? '?'}

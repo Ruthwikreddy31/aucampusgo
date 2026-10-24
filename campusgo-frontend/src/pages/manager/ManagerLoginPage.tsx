@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Store, ChefHat, Mail, Lock, ArrowRight, KeyRound, ShieldAlert } from 'lucide-react'
+import { ChefHat, Mail, Lock, ArrowRight, KeyRound, ShieldAlert } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { toast } from 'sonner'
 import { hasRole } from '../../utils/roles'

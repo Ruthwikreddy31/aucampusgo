@@ -188,23 +188,27 @@ export default function DeliveryOrderDetailPage() {
   const orderCode = order.orderNumber || `CG-${order.id}`
 
   return (
-    <div className="page-enter max-w-xl mx-auto pb-24 space-y-5 text-slate-100">
+    <div className="page-enter max-w-5xl mx-auto pb-24 md:pb-12 space-y-6 text-slate-100">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2.5">
           <Link to="/delivery/orders" className="p-2 -ml-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition">
             <ArrowLeft size={20} />
           </Link>
           <div>
             <h1 className="text-xl font-black text-white">{orderCode}</h1>
-            <p className="text-xs text-slate-400 font-semibold">Delivery Task</p>
+            <p className="text-xs text-slate-400 font-semibold">Delivery Task Details</p>
           </div>
         </div>
         <OrderStatusBadge status={order.orderStatus} />
       </div>
 
-      {/* ─── ACTIVE DELIVERY: CUSTOMER DETAILS & DIRECT CALL BUTTON ─── */}
-      <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-5 shadow-2xl space-y-4">
+      {/* 2-Column Responsive Grid on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Customer & Delivery Info */}
+        <div className="space-y-5">
+          {/* ─── ACTIVE DELIVERY: CUSTOMER DETAILS & DIRECT CALL BUTTON ─── */}
+          <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-5 shadow-2xl space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 block">
@@ -263,6 +267,102 @@ export default function DeliveryOrderDetailPage() {
         )}
       </div>
 
+      {/* Canteen Pickup Station Address Card */}
+      <div className="rounded-3xl border border-amber-500/30 bg-slate-900/90 p-5 space-y-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-400">
+            <Store size={18} />
+            <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">Canteen Pickup Station</h2>
+          </div>
+          <span className="text-[10px] font-extrabold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
+            Pickup Point
+          </span>
+        </div>
+        <div>
+          <p className="font-extrabold text-base text-white">{pickupContact?.shopName || order.shop?.name || 'Campus Canteen & Food Court'}</p>
+          <p className="text-xs text-slate-300 mt-1 flex items-start gap-1">
+            <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
+            <span>{pickupContact?.pickupLocation || 'Ground Floor, Student Activity Center (SAC), Narsampet, Warangal'}</span>
+          </p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800 text-xs">
+            <span className="text-slate-400">Kitchen manager: <span className="font-bold text-white">{pickupContact?.managerName || 'Canteen Manager'}</span></span>
+            {pickupContact?.managerPhone && (
+              <a href={`tel:${pickupContact.managerPhone.replace(/[^\d+]/g, '')}`} className="text-amber-400 font-extrabold flex items-center gap-1 hover:underline">
+                📞 {pickupContact.managerPhone}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Student Customer Details Card */}
+      <div className="rounded-3xl border border-indigo-500/30 bg-slate-900/90 p-5 space-y-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-indigo-400">
+            <h2 className="text-xs font-black uppercase tracking-wider text-indigo-300">Customer Details</h2>
+          </div>
+          <span className="text-[10px] font-extrabold text-indigo-400 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/30">
+            Student
+          </span>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400 font-bold">Student Name:</span>
+            <span className="text-sm font-black text-white">
+              {customerContact?.customerName || order.customerName || order.user?.name || 'Kalyan Rao'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400 font-bold">Contact Phone:</span>
+            {((customerContact?.phone && customerContact.phone !== 'Hidden') ||
+              (order.customerPhone && order.customerPhone !== 'Hidden') ||
+              (order.user?.phone && order.user.phone !== 'Hidden')) ? (
+              <a
+                href={`tel:${(customerContact?.phone || order.customerPhone || order.user?.phone || '').replace(/[^\d+]/g, '')}`}
+                className="text-xs font-black text-emerald-400 hover:underline flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
+              >
+                <Phone size={13} /> {customerContact?.phone || order.customerPhone || order.user?.phone}
+              </a>
+            ) : (
+              <span className="text-xs font-semibold text-slate-400">🔒 Hidden</span>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-400 font-bold">Email / Roll:</span>
+            <span className="text-xs font-semibold text-slate-300">{order.user?.email || 'student@anurag.edu.in'}</span>
+          </div>
+          {order.deliveryDeadline && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400 font-bold">Delivery Deadline:</span>
+              <span className="text-xs font-bold text-amber-400">{order.deliveryDeadline}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Package Content Card */}
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 space-y-3 backdrop-blur-xl">
+        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400">Items to Deliver</h2>
+        <div className="divide-y divide-slate-800 text-sm">
+          {order.items?.map((item) => (
+            <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex justify-between items-center">
+              <div>
+                <p className="font-extrabold text-white">{item.productName}</p>
+                <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
+              </div>
+              <span className="font-bold text-slate-300">₹{item.price * item.quantity}</span>
+            </div>
+          ))}
+        </div>
+        <div className="pt-3 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-slate-400">
+          <span>Student Total: ₹{order.totalAmount}</span>
+          <span className="text-emerald-400 font-black">Your earning follows the configured payout rule</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Right Column: Actions, Photo Proof & Status */}
+    <div className="space-y-5">
       {/* Action Banner for Current Stage */}
       {order.orderStatus === 'ASSIGNED' && (
         <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-5 space-y-3">
@@ -490,7 +590,7 @@ export default function DeliveryOrderDetailPage() {
         </div>
       )}
 
-      {/* Customer Rating & Feedback Card (if customer submitted a review) */}
+      {/* Customer Rating & Feedback Card */}
       {review && (
         <div className="rounded-3xl border border-amber-500/40 bg-slate-900/90 p-5 space-y-3 backdrop-blur-xl">
           <div className="flex items-center justify-between">
@@ -525,119 +625,8 @@ export default function DeliveryOrderDetailPage() {
           </p>
         </div>
       )}
-
-      {/* Canteen Pickup Station Address Card */}
-      <div className="rounded-3xl border border-amber-500/30 bg-slate-900/90 p-5 space-y-3 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-amber-400">
-            <Store size={18} />
-            <h2 className="text-xs font-black uppercase tracking-wider text-amber-300">Canteen Pickup Station</h2>
-          </div>
-          <span className="text-[10px] font-extrabold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30">
-            Pickup Point
-          </span>
-        </div>
-        <div>
-          <p className="font-extrabold text-base text-white">{pickupContact?.shopName || order.shop?.name || 'Campus Canteen & Food Court'}</p>
-          <p className="text-xs text-slate-300 mt-1 flex items-start gap-1">
-            <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
-            <span>{pickupContact?.pickupLocation || 'Ground Floor, Student Activity Center (SAC), Narsampet, Warangal'}</span>
-          </p>
-          <div className="mt-2.5 flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800 text-xs">
-            <span className="text-slate-400">Kitchen manager: <span className="font-bold text-white">{pickupContact?.managerName || 'Canteen Manager'}</span></span>
-            {pickupContact?.managerPhone && (
-              <a href={`tel:${pickupContact.managerPhone.replace(/[^\d+]/g, '')}`} className="text-amber-400 font-extrabold flex items-center gap-1 hover:underline">
-                📞 {pickupContact.managerPhone}
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Student Customer Details Card */}
-      <div className="rounded-3xl border border-indigo-500/30 bg-slate-900/90 p-5 space-y-3 backdrop-blur-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-indigo-400">
-            <h2 className="text-xs font-black uppercase tracking-wider text-indigo-300">Customer Details</h2>
-          </div>
-          <span className="text-[10px] font-extrabold text-indigo-400 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/30">
-            Student
-          </span>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-bold">Student Name:</span>
-            <span className="text-sm font-black text-white">
-              {customerContact?.customerName || order.customerName || order.user?.name || 'Kalyan Rao'}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-bold">Contact Phone:</span>
-            {((customerContact?.phone && customerContact.phone !== 'Hidden') ||
-              (order.customerPhone && order.customerPhone !== 'Hidden') ||
-              (order.user?.phone && order.user.phone !== 'Hidden')) ? (
-              <a
-                href={`tel:${(customerContact?.phone || order.customerPhone || order.user?.phone || '').replace(/[^\d+]/g, '')}`}
-                className="text-xs font-black text-emerald-400 hover:underline flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
-              >
-                <Phone size={13} /> {customerContact?.phone || order.customerPhone || order.user?.phone}
-              </a>
-            ) : (
-              <span className="text-xs font-semibold text-slate-400">🔒 Hidden</span>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-bold">Email / Roll:</span>
-            <span className="text-xs font-semibold text-slate-300">{order.user?.email || 'student@anurag.edu.in'}</span>
-          </div>
-          {order.deliveryDeadline && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-bold">Delivery Deadline:</span>
-              <span className="text-xs font-bold text-amber-400">{order.deliveryDeadline}</span>
-            </div>
-          )}
-          <div className="mt-2 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-            <p className="text-[11px] font-semibold text-slate-400">
-              🔒 The delivery OTP is shown only to the student. Ask them verbally when handing over.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Delivery Drop Location Card */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 space-y-3 backdrop-blur-xl">
-        <div className="flex items-center gap-2 text-emerald-400">
-          <MapPin size={18} />
-          <h2 className="text-xs font-black uppercase tracking-wider text-slate-400">Drop Destination</h2>
-        </div>
-        <p className="font-extrabold text-base text-white">{order.deliveryLocation}</p>
-        {order.deliveryInstructions && (
-          <div className="flex items-start gap-2 p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
-            <MessageSquare size={15} className="text-amber-400 shrink-0 mt-0.5" />
-            <span>Student Note: {order.deliveryInstructions}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Package Content Card */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 space-y-3 backdrop-blur-xl">
-        <h2 className="text-xs font-black uppercase tracking-wider text-slate-400">Items to Deliver</h2>
-        <div className="divide-y divide-slate-800 text-sm">
-          {order.items?.map((item) => (
-            <div key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex justify-between items-center">
-              <div>
-                <p className="font-extrabold text-white">{item.productName}</p>
-                <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
-              </div>
-              <span className="font-bold text-slate-300">₹{item.price * item.quantity}</span>
-            </div>
-          ))}
-        </div>
-        <div className="pt-3 border-t border-slate-800 flex justify-between items-center text-xs font-bold text-slate-400">
-          <span>Student Total: ₹{order.totalAmount}</span>
-          <span className="text-emerald-400 font-black">Your earning follows the configured payout rule</span>
-        </div>
-      </div>
     </div>
+  </div>
+</div>
   )
 }

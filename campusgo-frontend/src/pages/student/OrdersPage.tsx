@@ -45,7 +45,7 @@ export default function OrdersPage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader title="My Orders" subtitle={`${orders.length} orders`} />
-      <div className="px-4 pt-3 pb-4 space-y-3 max-w-lg mx-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-12 space-y-4 max-w-5xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-10"><LoadingSpinner /></div>
         ) : orders.length === 0 ? (
@@ -58,33 +58,35 @@ export default function OrdersPage() {
             </button>
           </div>
         ) : (
-          orders.map((order) => (
-            <div
-              key={order.id}
-              onClick={() => navigate(`/orders/${order.id}`)}
-              className="card p-4 cursor-pointer flex items-center gap-3"
-            >
-              <div className="w-12 h-12 rounded-xl bg-[var(--color-surface-2)] flex items-center justify-center text-2xl flex-shrink-0">
-                🧾
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {orders.map((order) => (
+              <div
+                key={order.id}
+                onClick={() => navigate(`/orders/${order.id}`)}
+                className="card p-4 cursor-pointer flex items-center gap-3 hover:shadow-md transition"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[var(--color-surface-2)] flex items-center justify-center text-2xl flex-shrink-0">
+                  🧾
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-[var(--color-text)]">Order #{order.id}</p>
+                  <p className="text-xs text-[var(--color-text-subtle)] mt-0.5">
+                    {format(new Date(order.createdAt), 'dd MMM yyyy, hh:mm a')}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-subtle)] truncate">📍 {order.deliveryLocation}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <OrderStatusBadge status={order.orderStatus} />
+                  <span className="text-sm font-black text-[var(--color-primary-light)]">₹{order.totalAmount}</span>
+                  {(order.orderStatus === 'DELIVERED' || order.orderStatus === 'COMPLETED') && (
+                    <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Star size={10} className="fill-amber-400" /> Rate Courier
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-[var(--color-text)]">Order #{order.id}</p>
-                <p className="text-xs text-[var(--color-text-subtle)] mt-0.5">
-                  {format(new Date(order.createdAt), 'dd MMM yyyy, hh:mm a')}
-                </p>
-                <p className="text-xs text-[var(--color-text-subtle)]">📍 {order.deliveryLocation}</p>
-              </div>
-              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                <OrderStatusBadge status={order.orderStatus} />
-                <span className="text-sm font-black text-[var(--color-primary-light)]">₹{order.totalAmount}</span>
-                {(order.orderStatus === 'DELIVERED' || order.orderStatus === 'COMPLETED') && (
-                  <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Star size={10} className="fill-amber-400" /> Rate Courier
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>

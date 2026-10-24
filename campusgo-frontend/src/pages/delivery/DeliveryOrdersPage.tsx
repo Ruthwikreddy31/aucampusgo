@@ -241,7 +241,7 @@ export default function DeliveryOrdersPage() {
   const openBidCount = availableOrders.length
 
   return (
-    <div className="page-enter max-w-2xl mx-auto pb-24 space-y-5 text-slate-100">
+    <div className="page-enter max-w-7xl mx-auto pb-24 md:pb-12 space-y-6 text-slate-100">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-800">
         <div>
@@ -352,13 +352,13 @@ export default function DeliveryOrdersPage() {
         </div>
       ) : activeTab === 'OPEN_BIDS' ? (
         /* ─── OPEN BIDS TAB ─────────────────────────────────────────── */
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-300">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="lg:col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-300">
             <p className="font-black text-emerald-400 mb-1">💼 ZestModel Sealed Bidding — Live</p>
             <p>When a customer places an order, all active delivery partners can bid. The customer reviews the <strong>top 5 bids</strong> (lowest fee + fastest ETA) and selects their preferred partner. You'll get notified instantly when selected.</p>
           </div>
           {availableOrders.length === 0 ? (
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
+            <div className="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
               <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-3xl">⏳</div>
               <h2 className="text-lg font-extrabold text-white">No Open Bids Right Now</h2>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
@@ -554,13 +554,13 @@ export default function DeliveryOrdersPage() {
 
       ) : activeTab === 'PENDING_CONFIRM' ? (
         /* ─── PENDING CONFIRMATIONS TAB ─────────────────────────────── */
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-violet-500/30 bg-violet-950/20 px-4 py-3 text-xs text-violet-300">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="lg:col-span-2 rounded-2xl border border-violet-500/30 bg-violet-950/20 px-4 py-3 text-xs text-violet-300">
             <p className="font-black text-violet-400 mb-1">🎯 You've been selected!</p>
             <p>The student has chosen you from the top bids. You have a limited window to <strong>Confirm</strong> or <strong>Reject</strong>. If you reject or don't respond in time, the student will select another partner.</p>
           </div>
           {pendingConfirmations.length === 0 ? (
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
+            <div className="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
               <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-3xl">🎯</div>
               <h2 className="text-lg font-extrabold text-white">No Pending Confirmations</h2>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
@@ -620,9 +620,9 @@ export default function DeliveryOrdersPage() {
 
       ) : activeTab === 'PICKUP_REQUESTS' ? (
         /* ─── PICKUP REQUESTS TAB ─────────────────────────────────────── */
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {pickupRequestOrders.length === 0 ? (
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
+            <div className="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
               <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-3xl">🔔</div>
               <h2 className="text-lg font-extrabold text-white">No Pickup Requests</h2>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
@@ -727,9 +727,9 @@ export default function DeliveryOrdersPage() {
 
       ) : (
         /* ─── MY ACTIVE ORDERS TAB ─────────────────────────────────── */
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {activeOrders.length === 0 ? (
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
+            <div className="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/60 p-10 text-center space-y-3">
               <div className="h-16 w-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-3xl">🛵</div>
               <h2 className="text-lg font-extrabold text-white">No Active Deliveries</h2>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">

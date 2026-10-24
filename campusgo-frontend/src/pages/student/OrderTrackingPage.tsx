@@ -215,7 +215,7 @@ export default function OrderTrackingPage() {
   const biddingExpired = Boolean(order.biddingDeadline && new Date(order.biddingDeadline).getTime() <= Date.now())
 
   return (
-    <div className="page-enter max-w-2xl mx-auto pb-24 space-y-6">
+    <div className="page-enter max-w-4xl mx-auto pb-24 md:pb-12 space-y-6">
       <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
         <div>
           <div className="flex items-center gap-2">

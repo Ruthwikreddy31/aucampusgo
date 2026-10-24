@@ -70,88 +70,145 @@ export default function LoginPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-5 blur-3xl pointer-events-none"
         style={{ background: 'radial-gradient(circle, #EE5A50, transparent)' }} />
 
-      <div className="w-full max-w-sm relative z-10">
+      <div className={`w-full ${showStudent ? 'max-w-md' : 'max-w-6xl'} relative z-10 transition-all duration-300`}>
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary glow-primary mb-3">
-            <span className="text-3xl">🎓</span>
+        <div className="text-center mb-8 sm:mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-3xl gradient-primary glow-primary mb-3 shadow-xl">
+            <span className="text-3xl sm:text-4xl">🎓</span>
           </div>
-          <h1 className="text-3xl font-black gradient-text-primary">CampusGo</h1>
-          <p className="text-[var(--color-text-muted)] text-sm mt-1">Campus Ordering Platform</p>
+          <h1 className="text-3xl sm:text-4xl font-black gradient-text-primary tracking-tight">CampusGo</h1>
+          <p className="text-[var(--color-text-muted)] text-sm sm:text-base mt-1 font-medium">Campus Ordering & Logistics Platform</p>
         </div>
 
         {!showStudent ? (
           <>
-            {/* Portal Selection */}
-            <div className="space-y-3 mb-6">
-              <p className="text-center text-xs font-extrabold uppercase tracking-widest text-[var(--color-text-muted)] mb-4">
-                Select Your Portal
+            <div className="text-center mb-6">
+              <span className="inline-block text-xs font-extrabold uppercase tracking-widest text-[var(--color-primary-light)] bg-[rgba(108,60,225,0.08)] px-4 py-1.5 rounded-full border border-[rgba(108,60,225,0.2)]">
+                Select Your Access Portal
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                Choose the portal corresponding to your role to authenticate
               </p>
+            </div>
 
+            {/* Portal Selection 4-Column Grid on Desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-8">
               {/* Student Portal */}
               <button
                 type="button"
                 onClick={() => setShowStudent(true)}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(238,90,80,0.3)] bg-[rgba(238,90,80,0.06)] hover:bg-[rgba(238,90,80,0.12)] hover:border-[rgba(238,90,80,0.6)] transition-all duration-200 group cursor-pointer"
+                className="flex flex-col justify-between p-6 rounded-3xl border-2 border-[rgba(238,90,80,0.3)] bg-[rgba(238,90,80,0.04)] hover:bg-[rgba(238,90,80,0.1)] hover:border-[rgba(238,90,80,0.6)] hover:shadow-xl hover:shadow-[rgba(238,90,80,0.15)] transition-all duration-300 group cursor-pointer text-left h-full"
               >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-[#EE5A50] to-[#f59e0b] flex items-center justify-center text-white shadow-lg shadow-[rgba(238,90,80,0.3)]">
-                  <span className="text-xl">🎓</span>
+                <div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#EE5A50] to-[#f59e0b] flex items-center justify-center text-white shadow-lg shadow-[rgba(238,90,80,0.3)] mb-4 group-hover:scale-105 transition-transform">
+                    <span className="text-2xl">🎓</span>
+                  </div>
+                  <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[rgba(238,90,80,0.15)] text-[#EE5A50] mb-2">
+                    Students & Staff
+                  </div>
+                  <h3 className="text-lg font-black text-[var(--color-text)]">Student Portal</h3>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                    Order snacks, meals, drinks, stationery and document printouts delivered to your classroom or hostel.
+                  </p>
+                  <ul className="mt-4 space-y-1.5 text-[11px] font-semibold text-[var(--color-text-subtle)] border-t border-[rgba(238,90,80,0.15)] pt-3">
+                    <li className="flex items-center gap-1.5">✓ Food & Canteen items</li>
+                    <li className="flex items-center gap-1.5">✓ Printout documents</li>
+                    <li className="flex items-center gap-1.5">✓ Real-time order tracking</li>
+                  </ul>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-extrabold text-[var(--color-text)] text-sm">Student Portal</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Order food, stationery & print services</p>
+                <div className="mt-6 flex items-center justify-between pt-3 border-t border-[rgba(238,90,80,0.15)] text-xs font-black text-[#EE5A50]">
+                  <span>Sign In with OTP</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
                 </div>
-                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-[#EE5A50] group-hover:translate-x-1 transition-all" />
               </button>
 
               {/* Delivery Partner Portal */}
               <Link
                 to="/delivery/login"
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.06)] hover:bg-[rgba(16,185,129,0.12)] hover:border-[rgba(16,185,129,0.6)] transition-all duration-200 group"
+                className="flex flex-col justify-between p-6 rounded-3xl border-2 border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.04)] hover:bg-[rgba(16,185,129,0.1)] hover:border-[rgba(16,185,129,0.6)] hover:shadow-xl hover:shadow-[rgba(16,185,129,0.15)] transition-all duration-300 group text-left h-full no-underline"
               >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
-                  <Bike size={22} />
+                <div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 mb-4 group-hover:scale-105 transition-transform">
+                    <Bike size={26} />
+                  </div>
+                  <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 mb-2">
+                    Couriers & Partners
+                  </div>
+                  <h3 className="text-lg font-black text-[var(--color-text)]">Delivery Partner</h3>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                    Claim active delivery requests, submit competitive fees, deliver packages, and manage your earnings.
+                  </p>
+                  <ul className="mt-4 space-y-1.5 text-[11px] font-semibold text-[var(--color-text-subtle)] border-t border-emerald-500/15 pt-3">
+                    <li className="flex items-center gap-1.5">✓ Claim & bid on orders</li>
+                    <li className="flex items-center gap-1.5">✓ Photo delivery proof & OTP</li>
+                    <li className="flex items-center gap-1.5">✓ Fast courier wallet payouts</li>
+                  </ul>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-extrabold text-[var(--color-text)] text-sm">Delivery Partner Portal</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Manage deliveries, bids & earnings</p>
+                <div className="mt-6 flex items-center justify-between pt-3 border-t border-emerald-500/15 text-xs font-black text-emerald-600">
+                  <span>Enter Delivery Portal</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
                 </div>
-                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
               </Link>
 
               {/* Manager Portal */}
               <Link
                 to="/manager/login"
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.06)] hover:bg-[rgba(245,158,11,0.12)] hover:border-[rgba(245,158,11,0.6)] transition-all duration-200 group"
+                className="flex flex-col justify-between p-6 rounded-3xl border-2 border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.04)] hover:bg-[rgba(245,158,11,0.1)] hover:border-[rgba(245,158,11,0.6)] hover:shadow-xl hover:shadow-[rgba(245,158,11,0.15)] transition-all duration-300 group text-left h-full no-underline"
               >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/30">
-                  <ChefHat size={22} />
+                <div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/30 mb-4 group-hover:scale-105 transition-transform">
+                    <ChefHat size={26} />
+                  </div>
+                  <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 mb-2">
+                    Kitchen & Store Staff
+                  </div>
+                  <h3 className="text-lg font-black text-[var(--color-text)]">Manager Portal</h3>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                    Manage kitchen preparation queues, mark food ready for pickup, handle store items, and oversee orders.
+                  </p>
+                  <ul className="mt-4 space-y-1.5 text-[11px] font-semibold text-[var(--color-text-subtle)] border-t border-amber-500/15 pt-3">
+                    <li className="flex items-center gap-1.5">✓ Live canteen kitchen orders</li>
+                    <li className="flex items-center gap-1.5">✓ Notify delivery couriers</li>
+                    <li className="flex items-center gap-1.5">✓ Stock & product catalog</li>
+                  </ul>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-extrabold text-[var(--color-text)] text-sm">Manager Portal</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Canteen & store order management</p>
+                <div className="mt-6 flex items-center justify-between pt-3 border-t border-amber-500/15 text-xs font-black text-amber-600">
+                  <span>Enter Manager Portal</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
                 </div>
-                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
               </Link>
 
               {/* Admin Portal */}
               <Link
                 to="/admin/login"
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.06)] hover:bg-[rgba(99,102,241,0.12)] hover:border-[rgba(99,102,241,0.6)] transition-all duration-200 group"
+                className="flex flex-col justify-between p-6 rounded-3xl border-2 border-[rgba(99,102,241,0.3)] bg-[rgba(99,102,241,0.04)] hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.6)] hover:shadow-xl hover:shadow-[rgba(99,102,241,0.15)] transition-all duration-300 group text-left h-full no-underline"
               >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/30">
-                  <ShieldCheck size={22} />
+                <div>
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/30 mb-4 group-hover:scale-105 transition-transform">
+                    <ShieldCheck size={26} />
+                  </div>
+                  <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/15 text-indigo-600 mb-2">
+                    Super Admin
+                  </div>
+                  <h3 className="text-lg font-black text-[var(--color-text)]">Admin Portal</h3>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed">
+                    Central campus operations: telemetry analytics, user management, verify delivery couriers, and finance.
+                  </p>
+                  <ul className="mt-4 space-y-1.5 text-[11px] font-semibold text-[var(--color-text-subtle)] border-t border-indigo-500/15 pt-3">
+                    <li className="flex items-center gap-1.5">✓ Full platform telemetry</li>
+                    <li className="flex items-center gap-1.5">✓ Approve delivery partners</li>
+                    <li className="flex items-center gap-1.5">✓ Campus radius & settings</li>
+                  </ul>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-extrabold text-[var(--color-text)] text-sm">Admin Portal</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Platform administration & analytics</p>
+                <div className="mt-6 flex items-center justify-between pt-3 border-t border-indigo-500/15 text-xs font-black text-indigo-600">
+                  <span>Enter Admin Portal</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
                 </div>
-                <ArrowRight size={18} className="text-[var(--color-text-muted)] group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
               </Link>
             </div>
 
             <p className="text-center text-xs text-[var(--color-text-subtle)]">
-              Select the portal that matches your role to continue
+              Maheshwaram, Narsampet, Warangal Campus • CampusGo System
             </p>
           </>
         ) : (

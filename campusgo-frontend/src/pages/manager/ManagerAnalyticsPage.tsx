@@ -39,48 +39,50 @@ export default function ManagerAnalyticsPage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader title="Analytics" />
-      <div className="px-4 pt-3 pb-8 space-y-6 max-w-3xl mx-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-12 space-y-6 max-w-7xl mx-auto">
+        {/* Charts in 2-column grid on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue chart */}
+          <div className="card p-5">
+            <h3 className="font-bold text-[var(--color-text)] mb-4">Revenue & Orders (Last 7 Days)</h3>
+            {revenueData.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-subtle)] text-center py-8">No data available</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6C3CE1" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6C3CE1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,60,225,0.1)" />
+                  <XAxis dataKey="date" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                  <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Area type="monotone" dataKey="revenue" stroke="#6C3CE1" fill="url(#revenueGrad)" strokeWidth={2} name="Revenue (₹)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
 
-        {/* Revenue chart */}
-        <div className="card p-4">
-          <h3 className="font-bold text-[var(--color-text)] mb-4">Revenue & Orders (Last 7 Days)</h3>
-          {revenueData.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-subtle)] text-center py-8">No data available</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6C3CE1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6C3CE1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,60,225,0.1)" />
-                <XAxis dataKey="date" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="revenue" stroke="#6C3CE1" fill="url(#revenueGrad)" strokeWidth={2} name="Revenue (₹)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Orders by status */}
-        <div className="card p-4">
-          <h3 className="font-bold text-[var(--color-text)] mb-4">Orders by Status</h3>
-          {statusData.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-subtle)] text-center py-8">No data available</p>
-          ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={statusData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,60,225,0.1)" />
-                <XAxis dataKey="status" tick={{ fill: '#9CA3AF', fontSize: 9 }} angle={-30} textAnchor="end" height={50} />
-                <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill="#8B5CF6" radius={[6, 6, 0, 0]} name="Orders" />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          {/* Orders by status */}
+          <div className="card p-5">
+            <h3 className="font-bold text-[var(--color-text)] mb-4">Orders by Status</h3>
+            {statusData.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-subtle)] text-center py-8">No data available</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={statusData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(108,60,225,0.1)" />
+                  <XAxis dataKey="status" tick={{ fill: '#9CA3AF', fontSize: 9 }} angle={-30} textAnchor="end" height={50} />
+                  <YAxis tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="count" fill="#8B5CF6" radius={[6, 6, 0, 0]} name="Orders" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
 
         {/* Popular products */}

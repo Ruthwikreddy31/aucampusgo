@@ -36,7 +36,7 @@ export default function ManagerProductsPage() {
         subtitle={`${products.length} products`}
         right={<button className="btn-icon"><Plus size={18} /></button>}
       />
-      <div className="px-4 pt-3 pb-8 space-y-3 max-w-3xl mx-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-12 space-y-4 max-w-7xl mx-auto">
         <input
           className="input-field"
           placeholder="Search products…"
@@ -45,36 +45,40 @@ export default function ManagerProductsPage() {
         />
         {loading ? (
           <div className="flex justify-center py-10"><LoadingSpinner /></div>
-        ) : filtered.map((product) => (
-          <div key={product.id} className="card p-4 flex items-center gap-3">
-            <div className="w-14 h-14 rounded-xl bg-[var(--color-surface-2)] overflow-hidden flex-shrink-0">
-              {product.imageUrl
-                ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-[var(--color-text)] truncate">{product.name}</p>
-              <p className="text-sm font-black text-[var(--color-primary-light)]">₹{product.price}</p>
-              <span className={`badge text-xs ${product.available ? 'badge-success' : 'badge-danger'}`}>
-                {product.available ? 'Available' : 'Unavailable'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => toggleAvailable(product)}
-                className="btn-icon"
-                title="Toggle availability"
-              >
-                {product.available
-                  ? <ToggleRight size={18} className="text-[var(--color-success)]" />
-                  : <ToggleLeft size={18} className="text-[var(--color-text-subtle)]" />
-                }
-              </button>
-              <button className="btn-icon"><Edit2 size={16} /></button>
-            </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((product) => (
+              <div key={product.id} className="card p-4 flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl bg-[var(--color-surface-2)] overflow-hidden flex-shrink-0">
+                  {product.imageUrl
+                    ? <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-2xl">🍽️</div>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-[var(--color-text)] truncate">{product.name}</p>
+                  <p className="text-sm font-black text-[var(--color-primary-light)]">₹{product.price}</p>
+                  <span className={`badge text-xs ${product.available ? 'badge-success' : 'badge-danger'}`}>
+                    {product.available ? 'Available' : 'Unavailable'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => toggleAvailable(product)}
+                    className="btn-icon"
+                    title="Toggle availability"
+                  >
+                    {product.available
+                      ? <ToggleRight size={18} className="text-[var(--color-success)]" />
+                      : <ToggleLeft size={18} className="text-[var(--color-text-subtle)]" />
+                    }
+                  </button>
+                  <button className="btn-icon"><Edit2 size={16} /></button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   )

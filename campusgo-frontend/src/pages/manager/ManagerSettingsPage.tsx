@@ -21,7 +21,7 @@ export default function ManagerSettingsPage() {
   return (
     <div className="page-enter min-h-dvh bg-[var(--color-bg)]">
       <PageHeader title="Settings" />
-      <div className="px-4 pt-3 pb-8 space-y-5 max-w-3xl mx-auto">
+      <div className="px-4 sm:px-6 pt-4 pb-12 space-y-6 max-w-5xl mx-auto">
 
         {/* Manager info */}
         <div className="card p-4 flex items-center gap-4">

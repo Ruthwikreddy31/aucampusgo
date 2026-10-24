@@ -23,26 +23,47 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-xl px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black shadow-md shadow-emerald-500/20">
-              <Bike size={20} />
+      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-xl px-4 sm:px-6 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black shadow-md shadow-emerald-500/20">
+              <Bike size={22} />
             </div>
             <div>
-              <span className="font-black text-sm text-white tracking-wide">CampusGo</span>
-              <span className="block text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Delivery Partner</span>
+              <span className="font-black text-base text-white tracking-wide">CampusGo</span>
+              <span className="block text-[10px] uppercase font-extrabold text-emerald-400 tracking-wider">Delivery Partner Portal</span>
             </div>
           </div>
 
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1.5 bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800">
+            {navItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/delivery'}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/70'
+                  }`
+                }
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
+
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-bold text-slate-200">{user?.name?.split(' ')[0] || 'Courier'}</span>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-800/60 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-800 bg-slate-800/60 text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
               title="Sign Out"
             >
               <LogOut size={15} />
@@ -53,12 +74,12 @@ export default function DeliveryLayout({ children }: { children: React.ReactNode
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto p-4 pb-24 overflow-y-auto">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-24 md:pb-12 overflow-y-auto">
         {children}
       </main>
 
-      {/* Modern Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800/80 bg-slate-900/95 backdrop-blur-xl safe-bottom">
+      {/* Modern Bottom Navigation (Mobile Only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800/80 bg-slate-900/95 backdrop-blur-xl safe-bottom">
         <div className="flex items-center justify-around py-2.5 px-4 max-w-md mx-auto">
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink

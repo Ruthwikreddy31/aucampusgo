@@ -98,10 +98,44 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 md:ml-64 overflow-y-auto pb-20 md:pb-6">
-        {children}
-      </main>
+      {/* Main content Area */}
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+        {/* Top Header on Desktop */}
+        <header className="sticky top-0 z-30 hidden md:flex h-16 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)]/85 px-6 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-[11px] font-extrabold text-amber-600">
+              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" /> Canteen Terminal Active
+            </span>
+            <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+              Maheshwaram, Narsampet, Warangal Campus
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="/home"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] hover:border-amber-400 transition"
+            >
+              <span>View Student Site</span>
+            </a>
+            <div className="flex items-center gap-2 border-l border-[var(--color-border)] pl-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-black text-xs shadow-xs">
+                {user?.name?.[0]?.toUpperCase() || 'M'}
+              </div>
+              <span className="text-xs font-black text-[var(--color-text)]">
+                {user?.name || 'Canteen Manager'}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Routed Page Container */}
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-8">
+          {children}
+        </main>
+      </div>
 
       {/* Bottom nav — mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-strong safe-bottom">

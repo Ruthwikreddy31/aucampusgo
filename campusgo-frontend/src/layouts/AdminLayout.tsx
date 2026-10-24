@@ -94,7 +94,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="flex min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
       {/* Sidebar Desktop */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 flex flex-col border-r border-slate-800 bg-slate-900/90 backdrop-blur-xl transition-all duration-300 ${
+        className={`fixed top-0 left-0 bottom-0 z-40 hidden md:flex flex-col border-r border-slate-800 bg-slate-900/90 backdrop-blur-xl transition-all duration-300 ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-800/50 text-slate-400 hover:text-white transition"
+            className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-800/50 text-slate-400 hover:text-white transition"
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
@@ -173,7 +173,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 type="button"
                 onClick={handleLogout}
                 title="Log out"
-                className="rounded-lg p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition"
+                className="rounded-lg p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition cursor-pointer"
               >
                 <LogOut size={16} />
               </button>
@@ -183,7 +183,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               type="button"
               onClick={handleLogout}
               title="Log out"
-              className="w-full flex items-center justify-center p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition rounded-lg"
+              className="w-full flex items-center justify-center p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition rounded-lg cursor-pointer"
             >
               <LogOut size={18} />
             </button>
@@ -192,7 +192,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${collapsed ? 'md:ml-20' : 'md:ml-64'}`}>
         {/* Top Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/80 px-6 backdrop-blur-md">
           <div className="flex items-center gap-3">
@@ -215,17 +215,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </a>
             <div className="flex items-center gap-2 border-l border-slate-800 pl-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-xs">
-                {user?.name?.[0]?.toUpperCase() || 'M'}
+                {user?.name?.[0]?.toUpperCase() || 'A'}
               </div>
               <span className="text-xs font-bold text-slate-200 hidden md:inline">
-                {user?.name || 'Manager'}
+                {user?.name || 'Administrator'}
               </span>
             </div>
           </div>
         </header>
 
         {/* Routed Page Container */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>
