@@ -362,15 +362,31 @@ export default function AdminProductsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Image URL
+                  Image URL or Path
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-xs text-white outline-none focus:border-indigo-500"
+                  placeholder="https://... or /images/..."
+                  className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
                 />
+                {imageUrl && (
+                  <div className="mt-2.5 flex items-center gap-3 p-2 rounded-2xl bg-slate-950 border border-slate-800">
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      className="h-12 w-12 rounded-xl object-cover bg-slate-900 border border-slate-800 shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.opacity = '0.3'
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-slate-300 truncate">Image Preview</p>
+                      <p className="text-[10px] text-slate-500 truncate">{imageUrl}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">

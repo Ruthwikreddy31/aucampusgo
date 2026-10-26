@@ -74,16 +74,58 @@ export const productService = {
   },
 
   async create(payload: Partial<Product>): Promise<Product> {
-    const { data } = await api.post<Product>('/api/products', payload)
-    return data
+    try {
+      const { data } = await api.post<Product>('/api/products', payload)
+      return normalizeProduct(data)
+    } catch {
+      const newProd: Product = {
+        id: Date.now(),
+        name: payload.name || 'New Product',
+        price: payload.price || 0,
+        description: payload.description || '',
+        imageUrl: payload.imageUrl || '',
+        categoryId: payload.categoryId || 1,
+        category: payload.category as any,
+        shopId: payload.shopId || 1,
+        available: true,
+        active: true,
+        stock: payload.stock || 100,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      mockProducts.unshift(newProd)
+      return normalizeProduct(newProd)
+    }
   },
 
   async update(id: number, payload: Partial<Product>): Promise<Product> {
-    const { data } = await api.put<Product>(`/api/products/${id}`, payload)
-    return data
+    try {
+      const { data } = await api.put<Product>(`/api/products/${id}`, payload)
+      const normalized = normalizeProduct(data)
+      const idx = mockProducts.findIndex((p) => p.id === Number(id))
+      if (idx !== -1) {
+        mockProducts[idx] = { ...mockProducts[idx], ...normalized }
+      }
+      return normalized
+    } catch {
+      const idx = mockProducts.findIndex((p) => p.id === Number(id))
+      if (idx !== -1) {
+        mockProducts[idx] = { ...mockProducts[idx], ...payload } as Product
+        return normalizeProduct(mockProducts[idx])
+      }
+      return normalizeProduct({ id, ...payload } as any)
+    }
   },
 
   async delete(id: number): Promise<void> {
-    await api.delete(`/api/products/${id}`)
+    try {
+      await api.delete(`/api/products/${id}`)
+    } catch {
+      // ignore
+    }
+    const idx = mockProducts.findIndex((p) => p.id === Number(id))
+    if (idx !== -1) {
+      mockProducts.splice(idx, 1)
+    }
   },
 }
