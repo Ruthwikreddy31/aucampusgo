@@ -108,9 +108,9 @@ public class ZestBiddingService {
             return false;
         }
 
-        // Partner must be approved by admin
+        // Partner must not have an unapproved/rejected application
         Optional<DeliveryPartnerApplication> appOpt = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId());
-        if (appOpt.isEmpty() || appOpt.get().getStatus() != ApplicationStatus.APPROVED) {
+        if (appOpt.isPresent() && appOpt.get().getStatus() != ApplicationStatus.APPROVED) {
             return false;
         }
 

@@ -49,7 +49,8 @@ public class DeliveryController {
         if (app.isPresent()) {
             return app.get().getStatus() == ApplicationStatus.APPROVED;
         }
-        return false;
+        // If the user already has the DELIVERY_PARTNER role and no non-approved application, treat them as approved
+        return true;
     }
 
     private boolean isEligibleDeliveryPartner(User user) {
