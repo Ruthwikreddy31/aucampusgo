@@ -65,8 +65,8 @@ public class ZestBiddingService {
         return settingRepository.findBySettingKey("zest.max_active_deliveries_per_partner")
                 .map(s -> {
                     try { return Integer.parseInt(s.getSettingValue().trim()); }
-                    catch (Exception e) { return 2; }
-                }).orElse(2);
+                    catch (Exception e) { return 10; }
+                }).orElse(10);
     }
 
     private double getDailyFeeAmount() {
@@ -180,7 +180,10 @@ public class ZestBiddingService {
         }
 
         // Active delivery count check (< configured limit)
+        // Only count orders created within the last 6 hours so stale/abandoned test orders do not permanently lock out the partner
+        LocalDateTime activeCutoff = LocalDateTime.now(CAMPUS_ZONE).minusHours(6);
         long activeCount = orderRepository.findByDeliveryAgentUserIdOrderByCreatedAtDesc(user.getId()).stream()
+                .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().isAfter(activeCutoff))
                 .filter(o -> o.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED
                         || o.getOrderStatus() == OrderStatus.DELIVERY_PARTNER_ASSIGNED
                         || o.getOrderStatus() == OrderStatus.DELIVERY_PARTNER_ACCEPTED

@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -162,9 +163,11 @@ public class DeliveryController {
             return ResponseEntity.status(403).body(Map.of("message", "Delivery partner approval required"));
         }
 
+        LocalDateTime activeCutoff = LocalDateTime.now(ZoneId.of("Asia/Kolkata")).minusHours(12);
         // Orders assigned to this partner via deliveryAgent
         List<Order> agentOrders = orderRepository.findByDeliveryAgentUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
+                .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().isAfter(activeCutoff))
                 .filter(o -> o.getOrderStatus() == OrderStatus.ASSIGNED
                         || o.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED
                         || o.getOrderStatus() == OrderStatus.PICKED_UP
