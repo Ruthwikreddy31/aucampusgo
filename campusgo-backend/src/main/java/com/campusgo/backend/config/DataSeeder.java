@@ -670,25 +670,25 @@ public class DataSeeder {
 				4.8
 		);
 
-		ensureProduct(dBlock, "Egg Puff", "Fast Food", "Flaky bakery puff filled with spiced egg masala.", 25, 20, "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Veg Puff", "Fast Food", "Crisp puff filled with mildly spiced vegetables.", 20, 25, "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Samosa", "Fast Food", "Hot potato samosa served with chutney.", 15, 30, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Frankie", "Fast Food", "Campus-style roll with veggie filling and sauces.", 45, 18, "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "French Fries", "Fast Food", "Crispy salted fries served hot.", 50, 20, "https://images.unsplash.com/photo-1576107232684-1279f390859f?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Momos", "Fast Food", "Steamed momos with spicy chutney.", 50, 15, "https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Biscuits", "Biscuits & Snacks", "Popular packaged biscuit options.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(dBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and savory snacks.", 20, 45, "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80");
+		ensureProduct(dBlock, "Egg Puff", "Fast Food", "Flaky bakery puff filled with spiced egg masala.", 25, 20, "https://www.yummyntasty.com/wp-content/uploads/2015/03/egg-puffs.jpg");
+		ensureProduct(dBlock, "Veg Puff", "Fast Food", "Crisp puff filled with mildly spiced vegetables.", 20, 25, "https://floursandfrostings.com/wp-content/uploads/2018/03/IMG_20180306_084523_451.jpg");
+		ensureProduct(dBlock, "Samosa", "Fast Food", "Hot potato samosa served with chutney.", 15, 30, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrSow8wiUuIxjfEToV69JWVUKXnNmisjibteHRz3SiFsXMpPswQFhS9QQ&s=10");
+		ensureProduct(dBlock, "Frankie", "Fast Food", "Campus-style roll with veggie filling and sauces.", 45, 18, "https://www.spiceupthecurry.com/wp-content/uploads/2019/09/frankie-recipe-2-1.jpg");
+		ensureProduct(dBlock, "French Fries", "Fast Food", "Crispy salted fries served hot.", 50, 20, "https://www.allrecipes.com/thmb/8_B6OD1w6h1V0zPi8KAGzD41Kzs=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/50223-homemade-crispy-seasoned-french-fries-VAT-Beauty-4x3-789ecb2eaed34d6e879b9a93dd56a50a.jpg");
+		ensureProduct(dBlock, "Momos", "Fast Food", "Steamed momos with spicy chutney.", 50, 15, "https://static.toiimg.com/thumb/53281477.cms?imgsize=1884587&width=800&height=800");
+		ensureProduct(dBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://myfoodstory.com/wp-content/uploads/2025/05/Healthy-Chocobar-1.jpg");
+		ensureProduct(dBlock, "Biscuits", "Biscuits & Snacks", "Popular packaged biscuit options.", 20, 40, "https://static.toiimg.com/thumb/62403305.cms?imgsize=566439&width=800&height=800");
+		ensureProduct(dBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and savory snacks.", 20, 45, "https://m.media-amazon.com/images/I/71gKmrEYnoL._AC_UF894,1000_QL80_.jpg");
 		ensureProduct(dBlock, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80");
 
-		ensureProduct(iBlock, "Egg Puff", "Fast Food", "Fresh egg puff from I Block bakery counter.", 25, 20, "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Veg Puff", "Fast Food", "Vegetable puff with crisp flaky layers.", 20, 25, "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Samosa", "Fast Food", "Classic hot samosa with spiced potato filling.", 15, 30, "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Frankie", "Fast Food", "Soft roll with fresh filling and sauces.", 45, 18, "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Biscuits", "Biscuits & Snacks", "Packaged biscuit options.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and namkeen.", 20, 45, "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(iBlock, "Kurkure", "Biscuits & Snacks", "Crunchy masala munch snack pack.", 20, 35, "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=800&q=80");
+		ensureProduct(iBlock, "Egg Puff", "Fast Food", "Fresh egg puff from I Block bakery counter.", 25, 20, "https://www.yummyntasty.com/wp-content/uploads/2015/03/egg-puffs.jpg");
+		ensureProduct(iBlock, "Veg Puff", "Fast Food", "Vegetable puff with crisp flaky layers.", 20, 25, "https://floursandfrostings.com/wp-content/uploads/2018/03/IMG_20180306_084523_451.jpg");
+		ensureProduct(iBlock, "Samosa", "Fast Food", "Classic hot samosa with spiced potato filling.", 15, 30, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrSow8wiUuIxjfEToV69JWVUKXnNmisjibteHRz3SiFsXMpPswQFhS9QQ&s=10");
+		ensureProduct(iBlock, "Frankie", "Fast Food", "Soft roll with fresh filling and sauces.", 45, 18, "https://www.spiceupthecurry.com/wp-content/uploads/2019/09/frankie-recipe-2-1.jpg");
+		ensureProduct(iBlock, "Ice Creams", "Ice Creams", "Assorted chilled ice cream cups.", 40, 20, "https://myfoodstory.com/wp-content/uploads/2025/05/Healthy-Chocobar-1.jpg");
+		ensureProduct(iBlock, "Biscuits", "Biscuits & Snacks", "Packaged biscuit options.", 20, 40, "https://static.toiimg.com/thumb/62403305.cms?imgsize=566439&width=800&height=800");
+		ensureProduct(iBlock, "Snacks", "Biscuits & Snacks", "Assorted chips and namkeen.", 20, 45, "https://m.media-amazon.com/images/I/71gKmrEYnoL._AC_UF894,1000_QL80_.jpg");
+		ensureProduct(iBlock, "Kurkure", "Biscuits & Snacks", "Crunchy masala munch snack pack.", 20, 35, "https://m.media-amazon.com/images/I/81EhmuRbGQL._AC_UF894,1000_QL80_.jpg");
 		ensureProduct(iBlock, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80");
 		ensureProduct(iBlock, "Brownie", "Bakery", "Soft chocolate brownie square.", 55, 18, "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80");
 		ensureProduct(iBlock, "Biryani", "Meals", "Campus biryani box with raita.", 120, 20, "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80");
@@ -698,11 +698,11 @@ public class DataSeeder {
 		ensureProduct(readers, "Records", "Stationery", "Lab record books and ruled records.", 60, 40, "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80");
 		ensureProduct(readers, "Pens", "Stationery", "Blue and black writing pens.", 10, 100, "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80");
 		ensureProduct(readers, "Pencils", "Stationery", "Graphite pencils for classwork and drawing.", 8, 80, "https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(readers, "Erasers", "Stationery", "Soft dust-free erasers.", 5, 80, "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80");
+		ensureProduct(readers, "Erasers", "Stationery", "Soft dust-free erasers.", 5, 80, "https://www.quickpantry.in/cdn/shop/products/apsara-non-dust-eraser-quick-pantry-2.jpg?v=1710538919");
 		ensureProduct(readers, "Other Stationery Items", "Stationery", "Scale, sharpener, sticky notes and exam essentials.", 30, 50, "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80");
 		ensureProduct(readers, "Chocolates", "Chocolates", "Assorted chocolate bars.", 30, 35, "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(readers, "Biscuits", "Biscuits", "Packaged biscuits for quick breaks.", 20, 40, "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80");
-		ensureProduct(readers, "Chips", "Chips", "Assorted chips and wafers.", 20, 35, "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80");
+		ensureProduct(readers, "Biscuits", "Biscuits", "Packaged biscuits for quick breaks.", 20, 40, "https://static.toiimg.com/thumb/62403305.cms?imgsize=566439&width=800&height=800");
+		ensureProduct(readers, "Chips", "Chips", "Assorted chips and wafers.", 20, 35, "https://instamart-media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/NI_CATALOG/IMAGES/ciw/2026/7/11/cf27c98a-e946-4220-a28d-ff57f0e5c6f9_1.UCplainsalted_primary_MN_f63902c8-9e2b-41a6-b714-1df3149b4255.jpg");
 
 		Set<String> oldDemoShops = Set.of("Campus Canteen", "Library Cafe");
 		Set<Long> oldDemoShopIds = new HashSet<>();
