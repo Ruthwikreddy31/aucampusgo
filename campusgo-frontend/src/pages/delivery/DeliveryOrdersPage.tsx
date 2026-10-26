@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { deliveryService } from '../../services/deliveryService'
 import { biddingService } from '../../services/biddingService'
@@ -51,10 +51,19 @@ export default function DeliveryOrdersPage() {
   const [pickupAlertShown, setPickupAlertShown] = useState<Set<number>>(new Set())
   const [confirmAlertShown, setConfirmAlertShown] = useState<Set<number>>(new Set())
   const [biddingCountdowns, setBiddingCountdowns] = useState<Record<number, { mins: number; secs: number; expired: boolean }>>({})
+  const fetchInProgressRef = useRef(false)
 
   const fetchAll = async (isInitial = false) => {
-    if (isInitial) setLoading(true)
-    try {
+  // Prevent overlapping polling requests.
+  if (fetchInProgressRef.current) {
+    return
+  }
+
+  fetchInProgressRef.current = true
+
+  if (isInitial) setLoading(true)
+
+  try { 
       const [avail, active, stats] = await Promise.all([
         deliveryService.getAvailableOrders(),
         deliveryService.getActiveOrders(),
@@ -118,8 +127,9 @@ export default function DeliveryOrdersPage() {
       console.error('Failed to load delivery data:', err)
       setFeedError(err?.message || 'Could not load delivery tasks. Please try again.')
     } finally {
-      if (isInitial) setLoading(false)
-    }
+  if (isInitial) setLoading(false)
+  fetchInProgressRef.current = false
+}
   }
 
   // Bidding countdown timer — skip ticking for orders where bid is already placed
@@ -161,7 +171,7 @@ export default function DeliveryOrdersPage() {
     const handleUpdate = () => fetchAll(false)
     window.addEventListener('campusgo-order-updated', handleUpdate)
     window.addEventListener('storage', handleUpdate)
-    const t = setInterval(() => fetchAll(false), 4000)
+    const t = setInterval(() => fetchAll(false), 10000)
     return () => {
       window.removeEventListener('campusgo-order-updated', handleUpdate)
       window.removeEventListener('storage', handleUpdate)

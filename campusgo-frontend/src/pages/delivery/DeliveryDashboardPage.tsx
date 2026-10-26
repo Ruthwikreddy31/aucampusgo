@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { deliveryService, type DeliveryStats } from '../../services/deliveryService'
 import { biddingService } from '../../services/biddingService'
@@ -6,13 +6,14 @@ import type { Order, DeliveryPartnerDailyFee, DeliveryPartnerWallet } from '../.
 import OrderStatusBadge from '../../components/OrderStatusBadge'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import { useAuthStore } from '../../store/authStore'
-import { Bike, CheckCircle, Clock, ChevronRight, MapPin, IndianRupee, Sparkles, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
+import { Bike, CheckCircle, Clock, ChevronRight, MapPin, IndianRupee, Sparkles, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw, Store, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function DeliveryDashboardPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [activeOrders, setActiveOrders] = useState<Order[]>([])
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([])
   const [availableCount, setAvailableCount] = useState<number>(0)
   const [stats, setStats] = useState<DeliveryStats | null>(null)
   const [dailyFee, setDailyFee] = useState<DeliveryPartnerDailyFee | null>(null)
@@ -21,33 +22,50 @@ export default function DeliveryDashboardPage() {
   const [dailyFeeError, setDailyFeeError] = useState('')
   const [loading, setLoading] = useState(true)
   const [payingFee, setPayingFee] = useState(false)
+  const fetchInProgressRef = useRef(false)
 
   const loadData = async (isInitial = false) => {
-    if (isInitial) setLoading(true)
-    const [activeResult, availableResult, statsResult, feeResult, walletResult] = await Promise.allSettled([
-      deliveryService.getActiveOrders(),
-      deliveryService.getAvailableOrders(),
-      deliveryService.getStats(),
-      biddingService.getDailyFeeStatus(user?.id),
-      biddingService.getWallet(user?.id),
-    ])
+    if (fetchInProgressRef.current) return
+    fetchInProgressRef.current = true
 
-    if (activeResult.status === 'fulfilled') setActiveOrders(activeResult.value)
-    if (availableResult.status === 'fulfilled') {
-      setAvailableCount(availableResult.value.length)
-      setDashboardError('')
-    } else {
-      setDashboardError(availableResult.reason?.message || 'Cannot connect to CampusGo. Check that the backend server is running.')
+    if (isInitial) setLoading(true)
+    try {
+      const [activeResult, availableResult, statsResult, feeResult, walletResult] = await Promise.allSettled([
+        deliveryService.getActiveOrders(),
+        deliveryService.getAvailableOrders(),
+        deliveryService.getStats(),
+        biddingService.getDailyFeeStatus(user?.id),
+        biddingService.getWallet(user?.id),
+      ])
+
+      if (activeResult.status === 'fulfilled') setActiveOrders(activeResult.value)
+      if (availableResult.status === 'fulfilled') {
+        setAvailableOrders(availableResult.value)
+        setAvailableCount(availableResult.value.length)
+        setDashboardError('')
+      } else {
+        const msg = availableResult.reason?.message || ''
+        if (msg.includes('timeout')) {
+          setDashboardError('Connecting to server... (Render free backend waking up)')
+        } else {
+          setDashboardError(msg || 'Cannot connect to CampusGo. Check that the backend server is running.')
+        }
+      }
+      if (statsResult.status === 'fulfilled') setStats(statsResult.value)
+      if (feeResult.status === 'fulfilled') {
+        setDailyFee(feeResult.value)
+        setDailyFeeError('')
+      } else {
+        const msg = feeResult.reason?.message || ''
+        if (!msg.includes('timeout')) {
+          setDailyFeeError(msg || 'Cannot connect to the server to verify your pass.')
+        }
+      }
+      if (walletResult.status === 'fulfilled') setWallet(walletResult.value)
+    } finally {
+      if (isInitial) setLoading(false)
+      fetchInProgressRef.current = false
     }
-    if (statsResult.status === 'fulfilled') setStats(statsResult.value)
-    if (feeResult.status === 'fulfilled') {
-      setDailyFee(feeResult.value)
-      setDailyFeeError('')
-    } else {
-      setDailyFeeError(feeResult.reason?.message || 'Cannot connect to the server to verify your pass.')
-    }
-    if (walletResult.status === 'fulfilled') setWallet(walletResult.value)
-    if (isInitial) setLoading(false)
   }
 
   const handlePayDailyFee = async () => {
@@ -68,8 +86,8 @@ export default function DeliveryDashboardPage() {
   useEffect(() => {
     loadData(true)
     // The dashboard must receive requests that are created after the courier
-    // has opened it. The Orders page already polls; keep this summary in sync.
-    const refreshTimer = window.setInterval(() => loadData(false), 4000)
+    // has opened it. Poll every 10 seconds to avoid request storms.
+    const refreshTimer = window.setInterval(() => loadData(false), 10000)
     const handleOrderUpdate = () => loadData(false)
     window.addEventListener('campusgo-order-updated', handleOrderUpdate)
     return () => {
@@ -242,6 +260,75 @@ export default function DeliveryDashboardPage() {
             <p className="text-xs text-slate-500 mt-1">Earnings and fees record</p>
           </div>
         )}
+
+        {/* Incoming Available Orders Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-amber-400" />
+              <h2 className="text-base font-extrabold text-white">Incoming Customer Orders (Open to Claim)</h2>
+            </div>
+            <Link
+              to="/delivery/orders"
+              className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+            >
+              View All ({availableOrders.length})
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+
+          {availableOrders.length === 0 ? (
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 text-center text-slate-400">
+              <Sparkles size={28} className="text-slate-600 mx-auto mb-2" />
+              <p className="text-sm font-bold text-slate-300">No open customer orders right now</p>
+              <p className="text-xs text-slate-500 mt-1">When students place canteen orders, they will appear here live for claiming.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {availableOrders.map((order) => {
+                const orderCode = order.orderNumber || `CG-${order.id}`
+                return (
+                  <div
+                    key={order.id}
+                    className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 hover:border-amber-400/70 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/20 text-xl shrink-0">
+                        🛵
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-extrabold text-sm text-white">{orderCode}</p>
+                          <span className="text-xs font-bold text-amber-300">₹{order.totalAmount}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-extrabold">
+                            NEW ORDER
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 flex items-center gap-1 mt-0.5">
+                          <Store size={13} className="text-slate-400 shrink-0" />
+                          <span className="font-semibold text-slate-200">{order.shop?.name || 'Campus Canteen'}</span>
+                          <span className="text-slate-500 mx-1">→</span>
+                          <MapPin size={13} className="text-slate-400 shrink-0" />
+                          <span className="truncate">{order.deliveryLocation || 'Campus Delivery Point'}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => navigate('/delivery/orders')}
+                        className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md shadow-amber-500/20"
+                      >
+                        Claim / Bid Now
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Active Deliveries List */}
         <div className="space-y-3">

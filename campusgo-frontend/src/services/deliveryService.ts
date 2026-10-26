@@ -71,13 +71,23 @@ export const deliveryService = {
   },
 
   async getAvailableOrders(): Promise<Order[]> {
-    try {
-      const { data } = await api.get<Order[]>('/api/delivery/available-orders')
-      return data
-    } catch (error: any) {
-      throw new Error(error?.response?.data?.message || error?.message || 'Could not load delivery requests from CampusGo.')
-    }
-  },
+  try {
+    const { data } = await api.get<Order[]>(
+      '/api/delivery/available-orders',
+      {
+        timeout: 60000,
+      },
+    )
+
+    return data
+  } catch (error: any) {
+    throw new Error(
+      error?.response?.data?.message ||
+      error?.message ||
+      'Could not load delivery requests from CampusGo.',
+    )
+  }
+},
 
   async getActiveOrders(): Promise<Order[]> {
     try {
