@@ -139,9 +139,11 @@ public class DeliveryController {
             return ResponseEntity.status(403).body(Map.of("message", "Delivery partner approval required"));
         }
 
-        // Only ACTIVE + AVAILABLE (eligible) partners can see open bidding orders
-        if (!isEligibleDeliveryPartner(user)) {
-            log.info("Delivery partner {} is approved but not eligible (ACTIVE+AVAILABLE) to view open orders", user.getName());
+        // Any approved, non-suspended partner can browse open orders.
+        // The daily fee is only enforced at bid submission time — this allows partners to
+        // see what orders are available before deciding to activate for the day.
+        if (!biddingService.isApprovedAndAvailablePartner(user)) {
+            log.info("Delivery partner {} is not currently available (suspended/offline)", user.getName());
             return ResponseEntity.ok(List.of());
         }
 
@@ -307,7 +309,14 @@ public class DeliveryController {
             return ResponseEntity.status(403).body(Map.of("message", "Pickup is allowed only for your assigned delivery"));
         }
 
-        boolean isReady = "READY_FOR_PICKUP".equalsIgnoreCase(order.getPreparationStatus()) || order.getOrderStatus() == OrderStatus.READY_FOR_PICKUP;
+        boolean isReady = "READY_FOR_PICKUP".equalsIgnoreCase(order.getPreparationStatus())
+                || order.getOrderStatus() == OrderStatus.READY_FOR_PICKUP
+                || order.getOrderStatus() == OrderStatus.ASSIGNED
+                || order.getOrderStatus() == OrderStatus.DELIVERY_ASSIGNED
+                || order.getOrderStatus() == OrderStatus.DELIVERY_PARTNER_ASSIGNED
+                || order.getOrderStatus() == OrderStatus.PLACED
+                || order.getOrderStatus() == OrderStatus.ACCEPTED
+                || order.getOrderStatus() == OrderStatus.PREPARING;
         if (!isReady) {
             return ResponseEntity.status(400).body(Map.of(
                     "message", "Order is not ready for pickup yet. Please wait for the manager/kitchen to finish preparation."
@@ -340,8 +349,11 @@ public class DeliveryController {
         }
 
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        if (!isAssignedTo(order, user) || (order.getOrderStatus() != OrderStatus.PICKED_UP && !"PICKED_UP".equalsIgnoreCase(order.getDeliveryStatus()))) {
-            return ResponseEntity.status(403).body(Map.of("message", "Order must be picked up by the assigned partner first"));
+        if (!isAssignedTo(order, user)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Only the assigned delivery partner can update transit status"));
+        }
+        if (order.getOrderStatus() == OrderStatus.DELIVERED || order.getOrderStatus() == OrderStatus.CANCELLED) {
+            return ResponseEntity.status(400).body(Map.of("message", "Order is already completed or cancelled"));
         }
 
         String oldStatus = order.getOrderStatus().name();

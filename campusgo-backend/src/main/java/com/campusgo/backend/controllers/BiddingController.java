@@ -71,7 +71,8 @@ public class BiddingController {
         if (userDetails != null) {
             User user = userRepository.findById(userDetails.getId()).orElse(null);
             if (user != null && user.hasRole(Role.DELIVERY_PARTNER)) {
-                if (!biddingService.isEligiblePartner(user)) {
+                // Only block suspended/offline partners — daily fee is checked at bid submission
+                if (!biddingService.isApprovedAndAvailablePartner(user)) {
                     return ResponseEntity.ok(List.of());
                 }
             }
@@ -97,8 +98,14 @@ public class BiddingController {
         if (!partnerUser.hasRole(Role.DELIVERY_PARTNER)) {
             return ResponseEntity.status(403).body(Map.of("message", "Only delivery partners can submit delivery bids"));
         }
+        if (!biddingService.isApprovedAndAvailablePartner(partnerUser)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Only Admin-approved and online delivery partners can participate in bidding."));
+        }
+        if (!biddingService.isDailyFeePaidToday(partnerUser.getId())) {
+            return ResponseEntity.status(403).body(Map.of("message", "A daily pass of ₹10 is required for today before submitting bids. Please activate your daily pass in your Dashboard or Wallet."));
+        }
         if (!biddingService.isEligiblePartner(partnerUser)) {
-            return ResponseEntity.status(403).body(Map.of("message", "Only Admin-approved and ACTIVE delivery partners can participate in bidding."));
+            return ResponseEntity.status(403).body(Map.of("message", "Cannot place bid: maximum active delivery limit reached. Complete current deliveries first."));
         }
 
         Long targetRequestId = requestId;

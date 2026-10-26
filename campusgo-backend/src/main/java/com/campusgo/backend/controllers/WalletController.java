@@ -7,6 +7,7 @@ import com.campusgo.backend.models.OrderStatus;
 import com.campusgo.backend.models.WalletTransaction;
 import com.campusgo.backend.repositories.*;
 import com.campusgo.backend.security.UserDetailsImpl;
+import com.campusgo.backend.services.ZestBiddingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +31,7 @@ public class WalletController {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
+    private final ZestBiddingService biddingService;
 
     @GetMapping("/partner/{partnerId}/daily-fee-status")
     public ResponseEntity<?> getDailyFeeStatus(@PathVariable Long partnerId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
@@ -109,6 +111,17 @@ public class WalletController {
                 .timestamp(LocalDateTime.now(ZoneId.of("Asia/Kolkata")))
                 .build();
         walletTransactionRepository.save(debitTxn);
+
+        // Notify this partner of all currently open orders so they can start bidding immediately
+        userRepository.findById(partnerId).ifPresent(partnerUser -> {
+            try {
+                biddingService.notifyPartnerOfOpenOrders(partnerUser);
+            } catch (Exception ex) {
+                // Non-critical: log but don't fail the fee payment
+                java.util.logging.Logger.getLogger(WalletController.class.getName())
+                        .warning("Could not notify partner of open orders after fee payment: " + ex.getMessage());
+            }
+        });
 
         return ResponseEntity.ok(saved);
     }

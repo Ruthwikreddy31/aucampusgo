@@ -95,22 +95,56 @@ public class ZestBiddingService {
     }
 
     /**
-     * Check if a delivery partner is eligible according to ZestModel rules:
-     * - Approved delivery partner application
-     * - Account status = ACTIVE
-     * - Availability status = AVAILABLE
-     * - Paid daily fee (₹10/day) for the current campus date
-     * - Inside/near campus geofence
-     * - Active delivery count < limit (e.g. 2)
+     * Lightweight check: is this user an approved, non-suspended delivery partner?
+     * Does NOT check daily fee — used for order visibility and notifications.
+     * Partners can see open orders and receive notifications without paying the daily fee;
+     * the fee is only enforced at bid submission time.
      */
-    public boolean isEligiblePartner(User user) {
+    public boolean isApprovedAndAvailablePartner(User user) {
         if (user == null || !user.hasRole(Role.DELIVERY_PARTNER)) {
             return false;
         }
-
-        // Partner must not have an unapproved/rejected application
         Optional<DeliveryPartnerApplication> appOpt = applicationRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId());
         if (appOpt.isPresent() && appOpt.get().getStatus() != ApplicationStatus.APPROVED) {
+            return false;
+        }
+        DeliveryAgent agent = agentRepository.findByUserId(user.getId())
+                .orElseGet(() -> {
+                    DeliveryAgent newAgent = DeliveryAgent.builder()
+                            .user(user)
+                            .availabilityStatus("AVAILABLE")
+                            .partnerStatus("INACTIVE")
+                            .build();
+                    return agentRepository.save(newAgent);
+                });
+        if ("SUSPENDED".equalsIgnoreCase(agent.getPartnerStatus())) {
+            return false;
+        }
+        if ("OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Check if a delivery partner has paid today's daily access fee (₹10/day).
+     */
+    public boolean isDailyFeePaidToday(Long userId) {
+        if (userId == null) return false;
+        LocalDate today = LocalDate.now(CAMPUS_ZONE);
+        Optional<DeliveryPartnerDailyFee> feeOpt = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(userId, today);
+        return feeOpt.isPresent() && "PAID".equalsIgnoreCase(feeOpt.get().getStatus());
+    }
+
+    /**
+     * Check if a delivery partner is fully eligible to BID according to ZestModel rules:
+     * - Approved delivery partner application
+     * - Account not suspended / not offline
+     * - Paid daily fee (₹10/day) for the current campus date
+     * - Active delivery count < limit (e.g. 2)
+     */
+    public boolean isEligiblePartner(User user) {
+        if (!isApprovedAndAvailablePartner(user)) {
             return false;
         }
 
@@ -131,15 +165,8 @@ public class ZestBiddingService {
             agent.setAvailabilityStatus("AVAILABLE");
         }
 
-        if ("SUSPENDED".equalsIgnoreCase(agent.getPartnerStatus())
-                || "OFFLINE".equalsIgnoreCase(agent.getAvailabilityStatus())) {
-            return false;
-        }
-
-        // A paid record for today's campus date is the only way to activate bidding.
-        LocalDate today = LocalDate.now(CAMPUS_ZONE);
-        Optional<DeliveryPartnerDailyFee> feeOpt = dailyFeeRepository.findByDeliveryPartnerIdAndFeeDate(user.getId(), today);
-        boolean feePaid = feeOpt.isPresent() && "PAID".equalsIgnoreCase(feeOpt.get().getStatus());
+        // A paid record for today's campus date is required to submit bids.
+        boolean feePaid = isDailyFeePaidToday(user.getId());
         if (!feePaid) {
             if (!"INACTIVE".equalsIgnoreCase(agent.getPartnerStatus())) {
                 agent.setPartnerStatus("INACTIVE");
@@ -169,6 +196,23 @@ public class ZestBiddingService {
             agentRepository.save(agent);
         }
         return eligible;
+    }
+
+    /**
+     * Notify a delivery partner of all currently open orders.
+     * Called after a partner pays their daily fee so they immediately learn about orders
+     * that were created before they became active.
+     */
+    public void notifyPartnerOfOpenOrders(User partner) {
+        List<Order> openOrders = orderRepository.findAllOpenBiddingOrders();
+        for (Order order : openOrders) {
+            notificationService.notifyUser(partner.getId(), order.getId(),
+                    "New delivery opportunity",
+                    "Order " + order.getOrderNumber() + " is open for bidding. Submit your delivery fee bid.",
+                    "DELIVERY_OPPORTUNITY");
+        }
+        log.info("Notified delivery partner {} of {} open orders after daily fee activation",
+                partner.getName(), openOrders.size());
     }
 
     private boolean isBidStillValid(DeliveryBid bid) {
@@ -263,11 +307,11 @@ public class ZestBiddingService {
                 "Delivery bidding opened",
                 "Delivery partners can now bid for order " + order.getOrderNumber() + ".",
                 "BIDDING_OPENED");
-        // Start from approved delivery-partner accounts, not from delivery_agents.
-        // A newly approved partner may not yet have an agent row; isEligiblePartner
-        // creates it and verifies ACTIVE / availability / fee requirements.
+        // Notify all approved, non-suspended delivery partners regardless of daily fee status.
+        // Partners who haven't paid today's fee can still see orders; the fee gate is only
+        // enforced at bid submission time so partners know opportunities exist.
         for (User partner : userRepository.findByRole(Role.DELIVERY_PARTNER)) {
-            if (isEligiblePartner(partner)) {
+            if (isApprovedAndAvailablePartner(partner)) {
                 notificationService.notifyUser(partner.getId(), order.getId(),
                         "New delivery opportunity",
                         "Order " + order.getOrderNumber() + " is open for bidding. Submit your delivery fee bid.",

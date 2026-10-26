@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '../../services/api'
+import { useAuthStore } from '../../store/authStore'
 
 interface PendingConfirmation extends DeliveryAssignment {
   order?: Order
@@ -32,12 +33,15 @@ interface PendingConfirmation extends DeliveryAssignment {
 
 export default function DeliveryOrdersPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   type TabType = 'OPEN_BIDS' | 'PENDING_CONFIRM' | 'PICKUP_REQUESTS' | 'ACTIVE'
   const [activeTab, setActiveTab] = useState<TabType>('OPEN_BIDS')
   const [availableOrders, setAvailableOrders] = useState<Order[]>([])
   const [activeOrders, setActiveOrders] = useState<Order[]>([])
   const [pickupRequestOrders, setPickupRequestOrders] = useState<Order[]>([])
   const [pendingConfirmations, setPendingConfirmations] = useState<PendingConfirmation[]>([])
+  const [dailyFeePaid, setDailyFeePaid] = useState<boolean | null>(null)
+  const [payingFee, setPayingFee] = useState(false)
   const [loading, setLoading] = useState(true)
   const [feedError, setFeedError] = useState<string | null>(null)
   const [earningPerDelivery, setEarningPerDelivery] = useState<number | null>(null)
@@ -64,11 +68,16 @@ export default function DeliveryOrdersPage() {
   if (isInitial) setLoading(true)
 
   try { 
-      const [avail, active, stats] = await Promise.all([
+      const [avail, active, stats, feeResult] = await Promise.all([
         deliveryService.getAvailableOrders(),
         deliveryService.getActiveOrders(),
         deliveryService.getStats().catch(() => null),
+        biddingService.getDailyFee(user?.id).catch(() => null),
       ])
+
+      if (feeResult) {
+        setDailyFeePaid(feeResult.status === 'PAID')
+      }
 
       // Fetch pending confirmations (orders where customer selected this partner)
       let pendingAssignments: PendingConfirmation[] = []
@@ -179,6 +188,20 @@ export default function DeliveryOrdersPage() {
     }
   }, [])
 
+  const handlePayDailyFee = async () => {
+    setPayingFee(true)
+    try {
+      await biddingService.payDailyFee(user?.id)
+      setDailyFeePaid(true)
+      toast.success('₹10 Daily Campus Access Pass activated! You can now place bids. 🛵')
+      fetchAll(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to activate daily pass')
+    } finally {
+      setPayingFee(false)
+    }
+  }
+
   const handleBidSubmit = async (orderId: number, defaultAmount?: number) => {
     const amount = defaultAmount || bidAmounts[orderId] || 20
     const deliveryMins = deliveryTimes[orderId] || 5
@@ -186,6 +209,21 @@ export default function DeliveryOrdersPage() {
     if (amount <= 0 || amount > 500) {
       toast.error('Bid fee must be between ₹5 and ₹500')
       return
+    }
+
+    if (dailyFeePaid === false) {
+      setPayingFee(true)
+      try {
+        await biddingService.payDailyFee(user?.id)
+        setDailyFeePaid(true)
+        toast.success('₹10 Daily Pass activated! Submitting your bid...')
+      } catch (err: any) {
+        toast.error(err?.message || 'Please activate your ₹10 daily pass before bidding')
+        setPayingFee(false)
+        return
+      } finally {
+        setPayingFee(false)
+      }
     }
 
     setSubmittingBidId(orderId)
@@ -363,6 +401,29 @@ export default function DeliveryOrdersPage() {
       ) : activeTab === 'OPEN_BIDS' ? (
         /* ─── OPEN BIDS TAB ─────────────────────────────────────────── */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {dailyFeePaid === false && (
+            <div className="lg:col-span-2 rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+                  <Zap size={20} />
+                </div>
+                <div>
+                  <p className="font-black text-amber-300 text-sm">₹10 Daily Pass Required to Submit Bids</p>
+                  <p className="text-amber-200/80 text-xs mt-0.5">
+                    You can browse all live orders below. To place bids and deliver orders today, activate your ₹10 Daily Pass.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={payingFee}
+                onClick={handlePayDailyFee}
+                className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition cursor-pointer disabled:opacity-50 shadow-md shadow-amber-500/20"
+              >
+                {payingFee ? 'Activating...' : 'Activate Daily Pass (₹10) ⚡'}
+              </button>
+            </div>
+          )}
           <div className="lg:col-span-2 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 text-xs text-emerald-300">
             <p className="font-black text-emerald-400 mb-1">💼 ZestModel Sealed Bidding — Live</p>
             <p>When a customer places an order, all active delivery partners can bid. The customer reviews the <strong>top 5 bids</strong> (lowest fee + fastest ETA) and selects their preferred partner. You'll get notified instantly when selected.</p>
@@ -532,11 +593,23 @@ export default function DeliveryOrdersPage() {
                         </div>
                         <button
                           type="button"
-                          disabled={submittingBidId === order.id || alreadyBid}
+                          disabled={submittingBidId === order.id || alreadyBid || payingFee}
                           onClick={() => handleBidSubmit(order.id)}
-                          className="flex-1 min-w-[120px] px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition cursor-pointer disabled:opacity-50 shadow-md shadow-emerald-500/20"
+                          className={`flex-1 min-w-[120px] px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer disabled:opacity-50 shadow-md ${
+                            dailyFeePaid === false && !alreadyBid
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
+                              : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+                          }`}
                         >
-                          {submittingBidId === order.id ? 'Submitting...' : alreadyBid ? `✅ Bid ₹${submittedBids[order.id].amount} placed` : 'Submit Sealed Bid 💼'}
+                          {submittingBidId === order.id
+                            ? 'Submitting...'
+                            : payingFee
+                            ? 'Activating Pass...'
+                            : alreadyBid
+                            ? `✅ Bid ₹${submittedBids[order.id].amount} placed`
+                            : dailyFeePaid === false
+                            ? 'Pay ₹10 Pass & Bid ⚡'
+                            : 'Submit Sealed Bid 💼'}
                         </button>
                       </div>
                     </div>
