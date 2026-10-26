@@ -149,15 +149,11 @@ export default function DeliveryOrderDetailPage() {
       toast.error('Please verify the student\'s delivery OTP before completing.')
       return
     }
-    if (!proofFile) {
-      toast.error('Please take a photo of the delivered items before completing delivery.')
-      return
-    }
     setActing(true)
     try {
       const updated = await deliveryService.uploadProofAndComplete(Number(id), proofFile, deliveryOtpInput.trim())
       setOrder(updated)
-      toast.success('Delivery completed with photo proof! Payout credited to your balance. 🎉')
+      toast.success(proofFile ? 'Delivery completed with photo proof! Payout credited to your balance. 🎉' : 'Delivery completed! Payout credited to your balance. 🎉')
       navigate('/delivery/history', { replace: true })
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to complete delivery')
@@ -473,11 +469,11 @@ export default function DeliveryOrderDetailPage() {
             )}
           </div>
 
-          {/* Photo Capture & Preview Area — Mandatory Photo of Delivered Items */}
+          {/* Photo Capture & Preview Area — Optional Photo of Delivered Items */}
           <div className={`rounded-2xl border-2 border-dashed p-4 text-center space-y-3 transition-all ${
             proofFile
               ? 'border-emerald-500/50 bg-emerald-950/20'
-              : 'border-amber-500/40 bg-slate-900/80 hover:border-amber-500/60'
+              : 'border-slate-700/60 bg-slate-900/80 hover:border-slate-600'
           }`}>
             <div className="flex items-center justify-between text-xs px-1">
               <span className="font-bold text-white flex items-center gap-1.5">
@@ -488,8 +484,8 @@ export default function DeliveryOrderDetailPage() {
                   <CheckCircle2 size={11} /> Photo Attached
                 </span>
               ) : (
-                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  Mandatory
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
+                  Optional
                 </span>
               )}
             </div>
@@ -508,18 +504,18 @@ export default function DeliveryOrderDetailPage() {
                     onClick={() => { setProofFile(null); setProofPreview(null); }}
                     className="text-xs font-bold text-red-400 hover:text-red-300 underline cursor-pointer"
                   >
-                    Retake / Change Photo
+                    Retake / Remove Photo
                   </button>
                 </div>
               </div>
             ) : (
               <div className="py-2 space-y-2">
-                <p className="text-xs text-amber-300/90 font-bold">
-                  Snap a clear photo of the delivered items handed over to the customer
+                <p className="text-xs text-slate-400 font-semibold">
+                  (Optional) Snap a clear photo of the delivered items handed over to the customer
                 </p>
                 <div className="flex justify-center gap-3">
-                  <label className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 px-4 py-2.5 text-xs font-black text-white transition cursor-pointer shadow-md">
-                    <Camera size={16} /> Take Photo of Items
+                  <label className="inline-flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 text-xs font-black text-slate-200 transition cursor-pointer shadow-md">
+                    <Camera size={16} className="text-emerald-400" /> Take Photo
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -529,7 +525,7 @@ export default function DeliveryOrderDetailPage() {
                       className="hidden"
                     />
                   </label>
-                  <label className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-black text-slate-200 hover:bg-slate-700 transition cursor-pointer">
+                  <label className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-xs font-black text-slate-300 hover:bg-slate-700 transition cursor-pointer">
                     <Upload size={16} /> Choose File
                     <input
                       type="file"
@@ -539,7 +535,7 @@ export default function DeliveryOrderDetailPage() {
                     />
                   </label>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">Camera opens automatically on mobile devices</p>
+                <p className="text-[11px] text-slate-500 font-medium">You can proceed without a photo or upload one for verification records</p>
               </div>
             )}
           </div>
@@ -547,7 +543,7 @@ export default function DeliveryOrderDetailPage() {
           <div className="space-y-1.5">
             <button
               type="button"
-              disabled={acting || !otpVerified || !proofFile}
+              disabled={acting || !otpVerified}
               onClick={handleCompleteDelivery}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -561,19 +557,17 @@ export default function DeliveryOrderDetailPage() {
               )}
             </button>
 
-            {!otpVerified && (
+            {!otpVerified ? (
               <p className="text-[11px] text-center text-amber-400/90 font-medium">
-                🔒 Step 1: Verify the student's 4-digit OTP.
+                🔒 Verify the student's 4-digit OTP to enable completion.
               </p>
-            )}
-            {otpVerified && !proofFile && (
-              <p className="text-[11px] text-center text-amber-400 font-medium animate-pulse">
-                📷 Step 2: Take a photo of the delivered items above to enable completion.
-              </p>
-            )}
-            {otpVerified && proofFile && (
+            ) : proofFile ? (
               <p className="text-[11px] text-center text-emerald-400 font-medium">
                 ✅ OTP verified & photo attached. Click above to complete delivery!
+              </p>
+            ) : (
+              <p className="text-[11px] text-center text-emerald-400 font-medium">
+                ✅ OTP verified! Click above to complete delivery and claim payout.
               </p>
             )}
           </div>

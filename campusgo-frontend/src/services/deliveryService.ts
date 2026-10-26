@@ -234,8 +234,8 @@ export const deliveryService = {
     }
   },
 
-  async uploadProofAndComplete(orderId: number, fileOrName: File | string, otp?: string): Promise<Order> {
-    const proofFilename = fileOrName instanceof File ? fileOrName.name : fileOrName
+  async uploadProofAndComplete(orderId: number, fileOrName?: File | string | null, otp?: string): Promise<Order> {
+    const proofFilename = fileOrName instanceof File ? fileOrName.name : (fileOrName || undefined)
     try {
       if (fileOrName instanceof File) {
         const formData = new FormData()
@@ -248,7 +248,10 @@ export const deliveryService = {
         })
         return data
       } else {
-        const payload: Record<string, string> = { proofFilename }
+        const payload: Record<string, string> = {}
+        if (proofFilename) {
+          payload.proofFilename = proofFilename
+        }
         if (otp) {
           payload.otp = otp.trim()
         }
@@ -262,7 +265,7 @@ export const deliveryService = {
         orders[idx] = {
           ...orders[idx],
           orderStatus: 'DELIVERED',
-          deliveryProofPath: proofFilename,
+          deliveryProofPath: proofFilename || undefined,
           deliveredAt: new Date().toISOString(),
           paymentStatus: 'PAID',
           updatedAt: new Date().toISOString(),

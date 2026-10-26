@@ -416,7 +416,7 @@ public class DeliveryController {
             order.setDeliveryOtpVerified(true);
         }
 
-        String proofFilename = "proof_verified.jpg";
+        String proofFilename = null;
         if (file != null && !file.isEmpty()) {
             proofFilename = storageService.storeFile(file);
         } else if (body != null && body.containsKey("proofFilename")) {
@@ -437,7 +437,8 @@ public class DeliveryController {
         deliveryAgentRepository.save(agent);
 
         // Record status history & credit earning
-        biddingService.recordStatusHistory(orderId, oldStatus, OrderStatus.DELIVERED.name(), user.getName(), "Delivered to customer with OTP verification and photo proof");
+        biddingService.recordStatusHistory(orderId, oldStatus, OrderStatus.DELIVERED.name(), user.getName(),
+                proofFilename != null ? "Delivered to customer with OTP verification and photo proof" : "Delivered to customer with OTP verification");
         eventPublisher.publishOrderStatusChanged(orderId, OrderStatus.DELIVERED.name(), updated);
 
         Double earningAmount = order.getDeliveryFee() != null ? order.getDeliveryFee().doubleValue() : 15.0;
